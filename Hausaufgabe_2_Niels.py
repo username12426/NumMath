@@ -133,15 +133,19 @@ def getqbar(h):
 
 _, _, _, index_matrix_i, index_matrix_j, index_vector_i = getindices()
 
+# For getM and getS you need to use the index Matrix because the output is a matrix
+# For getvq you use the index vector because the output is a vector
+
 def getM(h):
     M_element = getMbar(h)
     M_assemble = coo_matrix((M_element.flatten(), (index_matrix_i.flatten(), index_matrix_j.flatten()))).tocsr()
+    # You can use the flatten function to avoid a lot of indexing
     return M_assemble
 
 
 def getS(h):
-    S_elemet = getSbar(h)
-    S_assemble = coo_matrix((S_elemet.flatten(), (index_matrix_i.flatten(), index_matrix_j.flatten()))).tocsr()
+    S_element = getSbar(h)
+    S_assemble = coo_matrix((S_element.flatten(), (index_matrix_i.flatten(), index_matrix_j.flatten()))).tocsr()
     return S_assemble
 
 

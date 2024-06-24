@@ -28,7 +28,7 @@ B = np.array([[0, 1, 0],    # Auslenkung linkes Ende in m
 # Prorammiraufgabe 2 a
 
 
-def getindices():
+def getindizes():
     l_L = np.array(range(0, n))  # range does the -1 by default
     i_und = np.array([0, 1, 2, 3])
     j_und = np.array([0, 1, 2, 3])
@@ -131,7 +131,7 @@ def getqbar(h):
 
 # Programmieraufgabe 5
 
-_, _, _, index_matrix_i, index_matrix_j, index_vector_i = getindices()
+_, _, _, index_matrix_i, index_matrix_j, index_vector_i = getindizes()
 
 # For getM and getS you need to use the index Matrix because the output is a matrix
 # For getvq you use the index vector because the output is a vector

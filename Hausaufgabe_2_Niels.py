@@ -29,41 +29,21 @@ B = np.array([[0, 1, 0],    # Auslenkung linkes Ende in m
 
 
 def getindizes():
-    l_L = np.array(range(0, n))  # range does the -1 by default
-    i_und = np.array([0, 1, 2, 3])
-    j_und = np.array([0, 1, 2, 3])
+    # a) 3D-Arrays
+    nv = np.arange(0, 4, 1)  # erzeuge hilfsvektor [0, 1, 2, 3]
+    J, I = np.meshgrid(nv, nv)  # erzeuge Wiederholungselemente
 
-    J, I = np.meshgrid(j_und, i_und)    # Create meshgrid, because they have the desired appearance
+    matl = np.arange(n).reshape(n, 1, 1) * np.ones((1, 4, 4)).astype(int)
+    mati = np.repeat(I[np.newaxis, :, :], n, axis=0)
+    matj = np.repeat(J[np.newaxis, :, :], n, axis=0)
 
-    L_matrix_a = np.zeros((len(l_L), len(i_und), len(j_und)))     # Crete arrays with shape(n, 4, 4)
-    I_matrix_a = np.zeros((len(l_L), len(i_und), len(j_und)))
-    J_matrix_a = np.zeros((len(l_L), len(i_und), len(j_und)))
+    matlli = (2 * matl + mati).astype(int)
+    matllj = (2 * matl + matj).astype(int)
 
-    for i in l_L:
-        L_matrix_a[i, :, :] = i   #
-        I_matrix_a[i] = I   # Meshgrid of I stacked n times
-        J_matrix_a[i] = J   # Meshgrid of J stacked n times
-
-    two_l_plus_i_a = 2 * L_matrix_a + I_matrix_a
-    two_l_plus_j_a = 2 * L_matrix_a + J_matrix_a
-
-    # Programmieraufgabe 2 b
-
-    L_matrix_b = np.zeros((len(l_L), len(i_und), 1))
-    I_matrix_b = np.zeros((len(l_L), len(i_und), 1))
-
-    J, I = np.meshgrid(j_und, 1)
-    J_T = J.T
-
-    for i in l_L:
-        L_matrix_b[i, :, 0] = i
-        I_matrix_b[i, :] = J_T
-
-    two_l_plus_i_b = 2 * L_matrix_b + I_matrix_b
-
-    return L_matrix_a, I_matrix_a, J_matrix_a, two_l_plus_i_a, two_l_plus_j_a, two_l_plus_i_b
-
-getindices()
+    veki, vekl = np.meshgrid(nv, np.arange(0, n))
+    veklli = (2 * vekl + veki).astype(int)
+    
+    return matl, mati, matj, matlli, matllj, vekl, veki, veklli
 
 # Programmieraufgabe 3
 

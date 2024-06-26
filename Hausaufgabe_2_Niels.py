@@ -1,37 +1,53 @@
 import numpy as np
+import scipy.sparse
 from scipy.sparse import lil_matrix
 from scipy.sparse import coo_matrix
 from scipy.sparse import spdiags
+import matplotlib.pyplot as plt
 from scipy.sparse.linalg import spsolve
-factorial = np.vectorize(np.math.factorial)
 
-# Programmieraufgabe 1
+'''
+Aufgabe 1, Initialisierung
+'''
 
-n = 3   # Anzahl der Elemente in
-n_hat = 1   # Anzahl der zusätzlichen Auswertungspunkte je Element in 1
-n_und_tilde = 7  # Ordnung der Quadratur in 1, _und denotes an underline
-n_p = 100   # Anzahl der Zeitschritte in 1
-beta = 1/4  # Newmark-Koeffizient in 1
-gamma = 1/2     # Newmark-Koeffizient in 1
-eta = 0.1   # Zeitschrittweite in s
-l = 1   # Länge des Balkens in m
+n = 3  # Anzahl der Elemente in 1
+nh = 1  # Anzahl der zusätzlichen Auswertungspunkte je Element in 1
+ns = 7  # Ordnung der Quadratur in 1
+n_p = 100  # Anzahl der Zeitschritte in 1
+beta = 1 / 4  # Newmark- Koeffizient in 1
+gamma = 1 / 2  # Newmark- Koeffizient in 1
+eta = 0.1  # Zeitschrittweite in s
+l = 1  # Länge des Balkens in m
 my = 1  # Längenspezifische Masse in kg/m
-E = 1   # Elastizitätsmodul in Newton/m^2
-I = 1   # Elastizitätsmodul in m^4
-q = 1   # Streckenlast in Newton/m
+E = 1  # Elastizitätsmodul in N/m^2
+I = 1  # Flächenträgheitsmoment in m^4
+q = 1  # Streckenlast in N/m
 
-B = np.array([[0, 1, 0],    # Auslenkung linkes Ende in m
-              [0, 2, 0],    # Anstieg linkes Ende in 1
-              [n, 3, 0],    # Moment rechtes Ende in Nm
-              [n, 4, 0]])   # Querkraft rechtes Ende in N
+B = np.array([[0, 1, 0],  # Auslenkung linkes Ende in m
+              [0, 2, 0],  # Anstieg linkes Ende in 1
+              [n, 3, 0],  # Moment rechtes Ende in Nm
+              [n, 4, 0]])  # Querkraft rechtes Ende in N
 
-# Prorammiraufgabe 2 a
+# Test Array
+'''
+B = np.array([[0, 1, 0], 
+              [2, 1, 0],
+              [0, 2, 0], 
+              [2, 3, 1],
+              [n, 3, 0], 
+              [n, 4, 0]])
+'''
+
+'''
+Aufgabe 2, nützliche Arrays
+'''
 
 
+# a) 3D-Arrays
 def getindizes():
     # a) 3D-Arrays
-    nv = np.arange(0, 4, 1)  # erzeuge hilfsvektor [0, 1, 2, 3]
-    J, I = np.meshgrid(nv, nv)  # erzeuge Wiederholungselemente
+    nv = np.arange(0, 4, 1)  # Hilfvektor
+    J, I = np.meshgrid(nv, nv)  #
 
     matl = np.arange(n).reshape(n, 1, 1) * np.ones((1, 4, 4)).astype(int)
     mati = np.repeat(I[np.newaxis, :, :], n, axis=0)
@@ -40,118 +56,95 @@ def getindizes():
     matlli = (2 * matl + mati).astype(int)
     matllj = (2 * matl + matj).astype(int)
 
+    # We decided to use a row vector to represent the vector here
+    # You can use a column vector as well [[[0], [0], [0], [0]], [[1], [1], ..
     veki, vekl = np.meshgrid(nv, np.arange(0, n))
     veklli = (2 * vekl + veki).astype(int)
-    
+
+    print("3D-Array [l]", matl)
+    print("3D-Array [i]", mati)
+    print("3D-Array [j]", matj)
+    print("3D-Array [2l + i]", matlli)
+    print("3D-Array [2l + j]", matllj)
+    print("2D-Array [l]", vekl)
+    print("2D-Array [i]", veki)
+    print("2D-Array [veklli]", veklli)
+
     return matl, mati, matj, matlli, matllj, vekl, veki, veklli
 
-# Programmieraufgabe 3
+
+'''
+Aufgabe 3,4; Elementmatrizen, -vektoren
+'''
+
 
 def getMbar(h):
-    Mbar_matrix = np.array([[156, 22 * h, 54, -13 * h],
-                            [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2],
-                            [54, 13 * h, 156, -22],
-                            [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])
-
-    return ((my * h) / 420) * Mbar_matrix
-
-
-def getSbar(h):
-    Sbar_matrix = np.arry([[12, 6*h, -12, 6*h],
-                           [6*h, 4*h**2, -6*h, 2*h**2],
-                           [-12, -6*h, 12, -6*h],
-                           [6*h, 2*h**2, -6*h, 4*h**2]])
-
-    return ((E*I)/h**3) * Sbar_matrix
+    faktor = my * h / 420
+    matrix = np.array(
+        [[156, 22 * h, 54, -13 * h], [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2], [54, 13 * h, 156, -22 * h],
+         [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])
+    M = faktor * matrix
+    M = np.tile(M, (n, 1, 1))
+    return M
 
 
-def getqbar(h):
-    return ((q * h)/12) * np.array([[6], [h], [6], [-h]])
-
-
-# Programmieraufgabe 4
-
-def getMbar(h) -> np.ndarray:
-    Mbar_matrix = np.array([[156, 22 * h, 54, -13 * h],
-                            [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2],
-                            [54, 13 * h, 156, -22],
-                            [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])
-
-    Mbar_matrix = ((my * h) / 420) * Mbar_matrix
-    stacked_Mbar_matrix = np.zeros((n, 4, 4))
-    for i in range(n):
-        stacked_Mbar_matrix[i] = Mbar_matrix
-
-    return stacked_Mbar_matrix
+print(f'Mbar Matrix:')
+print(getMbar(1))
 
 
 def getSbar(h):
-    Sbar_matrix = np.arry([[12, 6 * h, -12, 6 * h],
-                           [6 * h, 4 * h ** 2, -6 * h, 2 * h ** 2],
-                           [-12, -6 * h, 12, -6 * h],
-                           [6 * h, 2 * h ** 2, -6 * h, 4 * h ** 2]])
+    faktor = E * I / h ** 3
+    matrix = np.array([[12, 6 * h, -12, 6 * h], [6 * h, 4 * h ** 2, -6 * h, 2 * h ** 2], [-12, -6 * h, 12, -6 * h],
+                       [6 * h, 2 * h ** 2, -6 * h, 4 * h ** 2]])
+    S = faktor * matrix
+    S = np.tile(S, (n, 1, 1))
+    return S
 
-    Sbar_matrix = ((E * I) / h ** 3) * Sbar_matrix
-    stacked_Sbar_matrix = np.arry((n, 4, 4))
-    for i in range(n):
-        stacked_Sbar_matrix[i] = Sbar_matrix
 
-    return stacked_Sbar_matrix
+print(f'Sbar Matrix:')
+print(getSbar(1))
 
 
 def getqbar(h):
-    qbar_vector = ((q * h)/12) * np.array([[6], [h], [6], [-h]])
-    stacked_qbar_matrix = np.zeros((n, 4, 1))
-    print(stacked_qbar_matrix)
-    for i in range(n):
-        stacked_qbar_matrix[i] = qbar_vector
-
-    return stacked_qbar_matrix
+    faktor = q * h / 12
+    vektor = np.array([[6], [h], [6], [-h]])
+    vekq = faktor * vektor
+    vekq = np.tile(vekq, (n, 1, 1))
+    return vekq
 
 
-# Programmieraufgabe 5
+print(f'qbar Vector:')
+print(getqbar(1))
 
-_, _, _, index_matrix_i, index_matrix_j, index_vector_i = getindizes()
+'''
+Aufgabe 5, Massen-, Steifigkeitsmatrix, Streckenlastvektor
+'''
+# indizes definieren
+matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes()
 
-# For getM and getS you need to use the index Matrix because the output is a matrix
-# For getvq you use the index vector because the output is a vector
 
+# Massenmatrix
 def getM(h):
-    M_element = getMbar(h)
-    M_assemble = coo_matrix((M_element.flatten(), (index_matrix_i.flatten(), index_matrix_j.flatten()))).tocsr()
-    # You can use the flatten function to avoid a lot of indexing
-    return M_assemble
+    M_alt = getMbar(h)  # daten Matrix definieren
+    M_neu = coo_matrix((M_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()
+    return M_neu
 
 
+# Steifigkeitsmatrix
+# analog zu getM für die Daten der Steifigkeitsmatrix
 def getS(h):
-    S_element = getSbar(h)
-    S_assemble = coo_matrix((S_element.flatten(), (index_matrix_i.flatten(), index_matrix_j.flatten()))).tocsr()
-    return S_assemble
+    S_alt = getSbar(h)
+    S_neu = coo_matrix((S_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()
+    return S_neu
 
 
+# Streckenlastvektor
+# analog zu getM für werte des Streckenlastvektors
 def getvq(h):
-    vq_element = getqbar(h)
-    vq_assemble = coo_matrix((vq_element.flatten(), (index_vector_i.flatten(), np.zeros_like(index_vector_i.flatten())))).tocsr()
-    return vq_assemble
+    vq_alt = getqbar(h)
+    vq_neu = coo_matrix((vq_alt.flatten(), (veklli.flatten(), np.zeros_like(veklli.flatten())))).tocsr()
+    # np.zeros_like(veklli.flatten()) erstellet ein Array aus Nullen, mit der gleichen Form wie veklli.flatten()
+    return vq_neu
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+print(getvq(1).toarray())

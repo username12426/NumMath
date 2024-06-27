@@ -110,11 +110,11 @@ def getqbar(h, n_elements):
 Aufgabe 5, Massen-, Steifigkeitsmatrix, Streckenlastvektor
 '''
 # indizes definieren
-matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)
+
 
 
 # Massenmatrix
-def getM(h, n_elements):
+def getM(h: float, n_elements: int):
     M_alt = getMbar(h, n_elements)  # daten Matrix definieren
     M_neu = coo_matrix((M_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()
     return M_neu
@@ -131,13 +131,14 @@ def getS(h, n_elements):
 # Streckenlastvektor
 # analog zu getM für werte des Streckenlastvektors
 def getvq(h, n_elements):
-    vq_alt = getqbar(h, n)
+    vq_alt = getqbar(h, n_elements)
+    print(vq_alt.flatten().shape)
+    print(veklli.flatten().shape)
+    print(np.zeros_like(veklli.flatten()).shape)
     vq_neu = coo_matrix((vq_alt.flatten(), (veklli.flatten(), np.zeros_like(veklli.flatten())))).tocsr()
     # np.zeros_like(veklli.flatten()) erstellet ein Array aus Nullen, mit der gleichen Form wie veklli.flatten()
     return vq_neu
 
-
-print(getvq(1, n).toarray())
 
 
 # Aufgabe 6 Variante 1
@@ -256,25 +257,36 @@ def getve(h, n_elements):
 
 # Aufgabe 10
 
-# Statik bedeutest, dass alle zeitlichen änderungen = 0 sind
-# Ich habe keine Ahung was h ist, ich setze jetzt ha als 1!!
 
-# Annahme h = 1!
-h = 0.05 # Wähle die Dicke des balkens als 5cm, 0,05m
+n_3 = 3
+h = l / n_3
+
+# Build the matricies for the DGL n = 3
+matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)
+# Find the static solution
 alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(h, n), getve(h, n))
 
 
 # Aufgabe 11
 
-# Die erssten 2n+2 werte sind die der auslenkungen und verbiegungen
+# Build the maticies for the DGL n = 100
+n_100 = 100
+h = l / n_100
+matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n_100)
+alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(h, n_100), getve(h, n_100))
 
-fig, ax = plt.subplots(2, 1)
-ax[0].plot(np.arange(0, l, l/(n+1)), alpha_e_static_solution_n3[:2*n+2:2])
-ax[0].set_label("x in m")
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(18, 4), sharey='row')
+ax[0].plot(np.arange(0, l, l/(n_3+1)), alpha_e_static_solution_n3[:2*n_3+2:2])
+ax[0].set_xlabel("x in m")
+ax[0].set_ylabel("w in m")
+ax[0].set_title("Solution for n = 3")
+ax[1].plot(np.arange(0, l, l/(n_100 + 1)), alpha_e_static_solution_n100[:2*n_100+2:2])
+ax[1].set_title("Solution for n = 100")
+ax[1].set_ylabel("w in m")
+ax[1].set_xlabel("x in m")
 
 plt.show()
 
-# Next steps:I have to add the n paramater to all functions, because i need to change the n!
 
 
 

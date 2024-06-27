@@ -56,19 +56,15 @@ def getindizes(n_elements: int):
     matlli = (2 * matl + mati).astype(int)
     matllj = (2 * matl + matj).astype(int)
 
-    # We decided to use a row vector to represent the vector here
-    # You can use a column vector as well [[[0], [0], [0], [0]], [[1], [1], ..
+    '''
+    We decided to use a row vector to represent the vectors here, because it is simpler to create
+    You can use a column vector as well [[[0], [0], [0], [0]], [[1], [1], ..
+    It does not matter that much as long as we stay consistent with this vector (matrix)
+    We use sparce matrices, so we flatten the vector anyway!
+    '''
+    
     veki, vekl = np.meshgrid(nv, np.arange(0, n_elements))
     veklli = (2 * vekl + veki).astype(int)
-
-    print("3D-Array [l]", matl)
-    print("3D-Array [i]", mati)
-    print("3D-Array [j]", matj)
-    print("3D-Array [2l + i]", matlli)
-    print("3D-Array [2l + j]", matllj)
-    print("2D-Array [l]", vekl)
-    print("2D-Array [i]", veki)
-    print("2D-Array [veklli]", veklli)
 
     return matl, mati, matj, matlli, matllj, vekl, veki, veklli
 
@@ -77,6 +73,9 @@ def getindizes(n_elements: int):
 Aufgabe 3,4; Elementmatrizen, -vektoren
 '''
 
+# We are still not sure if we should pass all variables as parameters in the function
+# currently "my", "E" and "I" are defined outside the functions. We will change this if it leads
+# to problems
 
 def getMbar(h, n_elements):
     faktor = my * h / 420
@@ -109,9 +108,13 @@ def getqbar(h, n_elements):
 '''
 Aufgabe 5, Massen-, Steifigkeitsmatrix, Streckenlastvektor
 '''
-# indizes definieren
 
-
+'''
+We are not sure if we should pass the matlli, matllj.. into the function as a Parameter
+Both versions would work
+If we pass the matricies as a parameter we have a lot of parameters
+If we dont pass them, 
+'''
 
 # Massenmatrix
 def getM(h: float, n_elements: int):
@@ -132,9 +135,6 @@ def getS(h, n_elements):
 # analog zu getM für werte des Streckenlastvektors
 def getvq(h, n_elements):
     vq_alt = getqbar(h, n_elements)
-    print(vq_alt.flatten().shape)
-    print(veklli.flatten().shape)
-    print(np.zeros_like(veklli.flatten()).shape)
     vq_neu = coo_matrix((vq_alt.flatten(), (veklli.flatten(), np.zeros_like(veklli.flatten())))).tocsr()
     # np.zeros_like(veklli.flatten()) erstellet ein Array aus Nullen, mit der gleichen Form wie veklli.flatten()
     return vq_neu
@@ -286,6 +286,10 @@ ax[1].set_ylabel("w in m")
 ax[1].set_xlabel("x in m")
 
 plt.show()
+
+
+# Aufgabe 12
+
 
 
 

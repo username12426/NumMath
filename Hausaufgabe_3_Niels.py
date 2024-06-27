@@ -44,21 +44,21 @@ Aufgabe 2, nützliche Arrays
 
 
 # a) 3D-Arrays
-def getindizes():
+def getindizes(n_elements: int):
     # a) 3D-Arrays
-    nv = np.arange(0, 4, 1)  # Hilfvektor
+    nv = np.arange(0, 4, 1)  # Hilfsvektor
     J, I = np.meshgrid(nv, nv)  #
 
-    matl = np.arange(n).reshape(n, 1, 1) * np.ones((1, 4, 4)).astype(int)
-    mati = np.repeat(I[np.newaxis, :, :], n, axis=0)
-    matj = np.repeat(J[np.newaxis, :, :], n, axis=0)
+    matl = np.arange(n_elements).reshape(n_elements, 1, 1) * np.ones((1, 4, 4)).astype(int)
+    mati = np.repeat(I[np.newaxis, :, :], n_elements, axis=0)
+    matj = np.repeat(J[np.newaxis, :, :], n_elements, axis=0)
 
     matlli = (2 * matl + mati).astype(int)
     matllj = (2 * matl + matj).astype(int)
 
     # We decided to use a row vector to represent the vector here
     # You can use a column vector as well [[[0], [0], [0], [0]], [[1], [1], ..
-    veki, vekl = np.meshgrid(nv, np.arange(0, n))
+    veki, vekl = np.meshgrid(nv, np.arange(0, n_elements))
     veklli = (2 * vekl + veki).astype(int)
 
     print("3D-Array [l]", matl)
@@ -78,89 +78,79 @@ Aufgabe 3,4; Elementmatrizen, -vektoren
 '''
 
 
-def getMbar(h):
+def getMbar(h, n_elements):
     faktor = my * h / 420
     matrix = np.array(
         [[156, 22 * h, 54, -13 * h], [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2], [54, 13 * h, 156, -22 * h],
          [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])
     M = faktor * matrix
-    M = np.tile(M, (n, 1, 1))
+    M = np.tile(M, (n_elements, 1, 1))
     return M
 
 
-print(f'Mbar Matrix:')
-print(getMbar(1))
 
-
-def getSbar(h):
+def getSbar(h, n_elements):
     faktor = E * I / h ** 3
     matrix = np.array([[12, 6 * h, -12, 6 * h], [6 * h, 4 * h ** 2, -6 * h, 2 * h ** 2], [-12, -6 * h, 12, -6 * h],
                        [6 * h, 2 * h ** 2, -6 * h, 4 * h ** 2]])
     S = faktor * matrix
-    S = np.tile(S, (n, 1, 1))
+    S = np.tile(S, (n_elements, 1, 1))
     return S
 
 
-print(f'Sbar Matrix:')
-print(getSbar(1))
-
-
-def getqbar(h):
+def getqbar(h, n_elements):
     faktor = q * h / 12
     vektor = np.array([[6], [h], [6], [-h]])
     vekq = faktor * vektor
-    vekq = np.tile(vekq, (n, 1, 1))
+    vekq = np.tile(vekq, (n_elements, 1, 1))
     return vekq
 
-
-print(f'qbar Vector:')
-print(getqbar(1))
 
 '''
 Aufgabe 5, Massen-, Steifigkeitsmatrix, Streckenlastvektor
 '''
 # indizes definieren
-matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes()
+matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)
 
 
 # Massenmatrix
-def getM(h):
-    M_alt = getMbar(h)  # daten Matrix definieren
+def getM(h, n_elements):
+    M_alt = getMbar(h, n_elements)  # daten Matrix definieren
     M_neu = coo_matrix((M_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()
     return M_neu
 
 
 # Steifigkeitsmatrix
 # analog zu getM für die Daten der Steifigkeitsmatrix
-def getS(h):
-    S_alt = getSbar(h)
+def getS(h, n_elements):
+    S_alt = getSbar(h, n_elements)
     S_neu = coo_matrix((S_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()
     return S_neu
 
 
 # Streckenlastvektor
 # analog zu getM für werte des Streckenlastvektors
-def getvq(h):
-    vq_alt = getqbar(h)
+def getvq(h, n_elements):
+    vq_alt = getqbar(h, n)
     vq_neu = coo_matrix((vq_alt.flatten(), (veklli.flatten(), np.zeros_like(veklli.flatten())))).tocsr()
     # np.zeros_like(veklli.flatten()) erstellet ein Array aus Nullen, mit der gleichen Form wie veklli.flatten()
     return vq_neu
 
 
-print(getvq(1).toarray())
+print(getvq(1, n).toarray())
 
 
 # Aufgabe 6 Variante 1
 # Sind und nicht ganz sicher ob wir == verwenden dürfen
 
-def getC():
+def getC(n_elements):
     E1_indices = B[B[:, 1] == 1, 0]
     E2_indices = B[B[:, 1] == 2, 0]
 
     C1_indices = np.concatenate((E1_indices * 2, E2_indices * 2 + 1))
 
     num_entries = len(C1_indices)
-    C1 = coo_matrix((np.ones(num_entries), (C1_indices, np.arange(num_entries))), shape=(2 * n + 2, num_entries))
+    C1 = coo_matrix((np.ones(num_entries), (C1_indices, np.arange(num_entries))), shape=(2 * n_elements + 2, num_entries))
 
     return C1
 
@@ -168,9 +158,9 @@ def getC():
 # Version 2
 # Here you only need to know ho many 1 and 2 conditions there are
 
-def getC():
+def getC(n_elements):
     # because we are not allowed to use this, because of the "==" operator, you can use this
-    B_sorted = np.zeros((4, n + 1))
+    B_sorted = np.zeros((4, n_elements + 1))
     B_sorted[B[:, 1] - 1, B[:, 0]] = 1
     E1_count = np.sum(B_sorted[0], dtype=int)
     E2_count = np.sum(B_sorted[1], dtype=int)
@@ -179,12 +169,12 @@ def getC():
     E1_values = np.ones(E1_count)  # all values are ones
     E1_rows = np.arange(0, E1_count)  # number of constrains
     E1_cols = B[:E1_count, 0] * 2  # * 2 from j = 2k (formula)
-    E1_shape = (2 * n + 2, E1_count)  # 2n+2 is number of constraints for all knots
+    E1_shape = (2 * n_elements + 2, E1_count)  # 2n+2 is number of constraints for all knots
 
     E2_values = np.ones(E2_count)
     E2_rows = np.arange(0, E2_count)
     E2_cols = B[:E2_count, 0] * 2 + 1  # * 2 + 1 from j = 2k+1
-    E2_shape = (2 * n + 2, E2_count)
+    E2_shape = (2 * n_elements + 2, E2_count)
 
     E1 = coo_matrix((E1_values, (E1_cols, E1_rows)), shape=E1_shape).tocsr()
     E2 = coo_matrix((E2_values, (E2_cols, E2_rows)), shape=E2_shape).tocsr()
@@ -196,7 +186,7 @@ def getC():
 
 # Variante 1. Das ist wieder die Variante mit dem ==, man kann das aber genau so auch alternativ ohne machen
 
-def getvn():
+def getvn(n_elements):
     E3_indices = B[B[:, 1] == 3, 0]
     E4_indices = B[B[:, 1] == 4, 0]
 
@@ -209,7 +199,7 @@ def getvn():
     v_N_rows = np.concatenate((E3_indices, E4_indices)).astype(int)
     v_N_cols = np.zeros(len(v_N_rows)).astype(int)
     v_N_vals = np.concatenate((c_3_values, c_4_values))
-    v_N_shape = (2 * n + 2, 1)
+    v_N_shape = (2 * n_elements + 2, 1)
 
     v_N = coo_matrix((v_N_vals, (v_N_rows, v_N_cols)), v_N_shape).tocsr()
 
@@ -246,9 +236,9 @@ def getMe(h):
     return Me
 
 
-def getSe(h):
-    S = getS(h)
-    C = getC()
+def getSe(h, n_elements):
+    S = getS(h, n_elements)
+    C = getC(n_elements)
     I, J = np.meshgrid(np.arange(2), np.arange(2))
     zero_filler = coo_matrix((np.zeros(4), (I.flatten(), J.flatten()))).tocsr()
 
@@ -258,8 +248,8 @@ def getSe(h):
     return Se
 
 
-def getve(h):
-    vq_nq = getvq(h) + getvn()
+def getve(h, n_elements):
+    vq_nq = getvq(h, n_elements) + getvn(n_elements)
     v_E = scipy.sparse.vstack([vq_nq, getvd()])
     return v_E
 
@@ -271,7 +261,7 @@ def getve(h):
 
 # Annahme h = 1!
 h = 0.05 # Wähle die Dicke des balkens als 5cm, 0,05m
-alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(h), getve(h))
+alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(h, n), getve(h, n))
 
 
 # Aufgabe 11

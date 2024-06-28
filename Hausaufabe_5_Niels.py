@@ -33,40 +33,47 @@ B = np.array([[0, 1, 0],  # Auslenkung linkes Ende in m
 # We need this function, because when we change the n, the B matrix is changes as well
 def reinitialize_B(n_element):
     global B
-    B = np.array([[0, 1, 0],  # Auslenkung linkes Ende in m
-                  [0, 2, 0],  # Anstieg linkes Ende in 1
-                  [n_element, 3, 0],  # Moment rechtes Ende in Nm
-                  [n_element, 4, 0]])  # Querkraft rechtes Ende in N
+    B = np.array([[0, 1, 0],
+                  [0, 2, 0],
+                  [n_element, 3, 0],
+                  [n_element, 4, 0]])
 
 
 '''
 Aufgabe 2, nützliche Arrays
 '''
 
-
 # a) 3D-Arrays
 def getindizes(n_elements: int):
     # a) 3D-Arrays
-    nv = np.arange(0, 4, 1)  # Hilfsvektor
-    J, I = np.meshgrid(nv, nv)  #
+    nv = np.arange(0, 4, 1)  # Create an array with values [0, 1, 2, 3]
+    J, I = np.meshgrid(nv, nv)  #repeats the rows, columns of nv in J, I
 
-    matl = np.arange(n_elements).reshape(n_elements, 1, 1) * np.ones((1, 4, 4)).astype(int)
-    mati = np.repeat(I[np.newaxis, :, :], n_elements, axis=0)
-    matj = np.repeat(J[np.newaxis, :, :], n_elements, axis=0)
+    matl = np.arange(n_elements).reshape(n_elements, 1, 1) * np.ones((1, 4, 4)).astype(int) #Create a 3D array, where each element from 0 to n_elements-1 is repeated in shape(4,4)
+    mati = np.repeat(I[np.newaxis, :, :], n_elements, axis=0) #Repeat the  array I along the first axis n_elements times
+    matj = np.repeat(J[np.newaxis, :, :], n_elements, axis=0) #Repeat the  array J along the first axis n_elements times
 
-    matlli = (2 * matl + mati).astype(int)
-    matllj = (2 * matl + matj).astype(int)
+    matlli = (2 * matl + mati).astype(int) #Calculate a 3D array from  matl & mati
+    matllj = (2 * matl + matj).astype(int) #Calculate a 3D array from  matl & matj
 
-    '''
-    We decided to use a row vector to represent the vectors here, because it is simpler to create
-    You can use a column vector as well [[[0], [0], [0], [0]], [[1], [1], ..
-    It does not matter that much as long as we stay consistent with this vector (matrix)
-    We use sparce matrices, so we flatten the vector anyway!
-    '''
+    # We decided to use a row vector to represent the vector here
+    # You can use a column vector as well [[[0], [0], [0], [0]], [[1], [1], ..
+    # It does not matter that much as long as we stay consistent with this vector (matrix)
+    # We use sparce matrices, so we flatten the vector anyway!
+    veki, vekl = np.meshgrid(nv, np.arange(0, n_elements)) #Create 2D  arrays  using nv and an array from 0 to n_elements-1
+    veklli = (2 * vekl + veki).astype(int) #Calculate a 2D array from  vekl + veki
 
-    veki, vekl = np.meshgrid(nv, np.arange(0, n_elements))
-    veklli = (2 * vekl + veki).astype(int)
+    # Print the generated 3D and 2D arrays
+    print("3D-Array [l]", matl)
+    print("3D-Array [i]", mati)
+    print("3D-Array [j]", matj)
+    print("3D-Array [2l + i]", matlli)
+    print("3D-Array [2l + j]", matllj)
+    print("2D-Array [l]", vekl)
+    print("2D-Array [i]", veki)
+    print("2D-Array [veklli]", veklli)
 
+    # Return the generated arrays
     return matl, mati, matj, matlli, matllj, vekl, veki, veklli
 
 
@@ -74,22 +81,20 @@ def getindizes(n_elements: int):
 Aufgabe 3,4; Elementmatrizen, -vektoren
 '''
 
-# We are still not sure if we should pass all variables as parameters in the function
-# currently "my", "E" and "I" are defined outside the functions. We will change this if it leads
-# to problems
-
-def getMbar(h, n_elements):
-    faktor = my * h / 420
+#create Mass matrix
+def getMbar(h, my,  n_elements):
+    faktor = my * h / 420 # define factor
     matrix = np.array(
         [[156, 22 * h, 54, -13 * h], [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2], [54, 13 * h, 156, -22 * h],
-         [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])
-    M = faktor * matrix
-    M = np.tile(M, (n_elements, 1, 1))
+         [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]]) # define matrix
+    M = faktor * matrix # scale matrix by the factor
+    M = np.tile(M, (n_elements, 1, 1)) # Replicate the scaled matrix for each element
+    # Return the final 3D array
     return M
 
 
-
-def getSbar(h, n_elements):
+# create Stiffness matrix S the same way as M in getMbar
+def getSbar(h, E, I, n_elements):
     faktor = E * I / h ** 3
     matrix = np.array([[12, 6 * h, -12, 6 * h], [6 * h, 4 * h ** 2, -6 * h, 2 * h ** 2], [-12, -6 * h, 12, -6 * h],
                        [6 * h, 2 * h ** 2, -6 * h, 4 * h ** 2]])
@@ -97,8 +102,8 @@ def getSbar(h, n_elements):
     S = np.tile(S, (n_elements, 1, 1))
     return S
 
-
-def getqbar(h, n_elements):
+# create element vector vekq the same way as M in getMbar
+def getqbar(h, q, n_elements):
     faktor = q * h / 12
     vektor = np.array([[6], [h], [6], [-h]])
     vekq = faktor * vektor
@@ -109,37 +114,31 @@ def getqbar(h, n_elements):
 '''
 Aufgabe 5, Massen-, Steifigkeitsmatrix, Streckenlastvektor
 '''
+# Define indices
+matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)
 
-'''
-We are not sure if we should pass the matlli, matllj.. into the function as a Parameter
-Both versions would work
-If we pass the matricies as a parameter we have a lot of parameters
-If we dont pass them, 
-'''
 
-# Massenmatrix
-def getM(h: float, n_elements: int):
-    M_alt = getMbar(h, n_elements)  # daten Matrix definieren
+# Mass matrix
+def getM(h, my, n_elements):
+    M_alt = getMbar(h, my,  n_elements)  # Define the data matrix
     M_neu = coo_matrix((M_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()
     return M_neu
 
 
-# Steifigkeitsmatrix
-# analog zu getM für die Daten der Steifigkeitsmatrix
-def getS(h, n_elements):
-    S_alt = getSbar(h, n_elements)
-    print(S_alt.shape)
-    print(matlli.shape)
-    print(matllj.shape)
-    S_neu = coo_matrix((S_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()
+# Stiffness matrix
+# Analogous to getM for the data of the stiffness matrix
+def getS(h, E, I, n_elements):
+    S_alt = getSbar(h, E, I, n_elements)
+    S_neu = coo_matrix((S_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()# Convert the data matrix to a sparse matrix in COO format and then to CSR format
     return S_neu
 
 
-# Streckenlastvektor
-# analog zu getM für werte des Streckenlastvektors
-def getvq(h, n_elements):
-    vq_alt = getqbar(h, n_elements)
+# element vector
+# Analogous to getM for the values of the element vector
+def getvq(h, q, n_elements):
+    vq_alt = getqbar(h, q, n_elements)
     vq_neu = coo_matrix((vq_alt.flatten(), (veklli.flatten(), np.zeros_like(veklli.flatten())))).tocsr()
+    # np.zeros_like(veklli.flatten()) creates an array of zeros with the same shape as veklli.flatten()
     return vq_neu
 
 
@@ -243,8 +242,8 @@ def getvd():
 
 # Aufgabe 9
 
-def getMe(h, n_elements):
-    M = getM(h, n_elements)
+def getMe(h, my, n_elements):
+    M = getM(h, my, n_elements)
     C = getC(n_elements)
     C0 = np.zeros_like(C.toarray())
     I, J = np.meshgrid(np.arange(2), np.arange(2))
@@ -257,8 +256,8 @@ def getMe(h, n_elements):
     return Me
 
 
-def getSe(h, n_elements):
-    S = getS(h, n_elements)
+def getSe(h, E, I, n_elements):
+    S = getS(h, E, I, n_elements)
     C = getC(n_elements)
     I, J = np.meshgrid(np.arange(2), np.arange(2))
     zero_filler = coo_matrix((np.zeros(4), (I.flatten(), J.flatten()))).tocsr()
@@ -269,8 +268,8 @@ def getSe(h, n_elements):
     return Se
 
 
-def getve(h, n_elements):
-    vq_nq = getvq(h, n_elements) + getvn(n_elements)
+def getve(h, q, n_elements):
+    vq_nq = getvq(h, q, n_elements) + getvn(n_elements)
     v_E = scipy.sparse.vstack([vq_nq, getvd()])
     return v_E
 
@@ -283,7 +282,7 @@ h = l / n
 
 reinitialize_B(n)   # We changed the n to we have to update the B matrix
 matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)    # Build the matricies for the DGL n = 3
-alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(h, n), getve(h, n))  # Find the static solution
+alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(h, E, I, n), getve(h, E, n))  # Find the static solution
 
 '''
 Aufgabe 11
@@ -294,7 +293,7 @@ n_100 = 100
 h = l / n_100
 reinitialize_B(n_100)   # update the B matrix for the new n
 matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n_100)    # update index matrices
-alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(h, n_100), getve(h, n_100))
+alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(h, E, I, n_100), getve(h, q, n_100))
 
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(18, 4), sharey='row')
 ax[0].plot(np.arange(0, l, l/(n+1)), alpha_e_static_solution_n3[:2*n+2:2])
@@ -319,9 +318,9 @@ h = l/n
 reinitialize_B(n)   # update the B matrix for the new n
 matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)
 
-M = getMe(h, n)
-S = getSe(h, n)
-v_e = getve(h, n)   # reinitialize the v_e vector, because the load has changed
+M = getMe(h, my, n)
+S = getSe(h, E, I, n)
+v_e = getve(h, q, n)   # reinitialize the v_e vector, because the load has changed
 
 # use the static state as our startingpoint for the Newmark-algorithim
 
@@ -404,11 +403,10 @@ for n_iteration in range(1, 1000):
     w_static_solution[1::2] = analytical_w_prime(np.linspace(0, l, n_iteration+1))
 
     # Numeric Solution
-    alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(h, n_iteration), getve(h, n_iteration))[:2*n_iteration+2]
+    alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(h, E, I, n_iteration), getve(h, q, n_iteration))[:2*n_iteration+2]
 
     # Generate A matrix from the M matrix
-    my = 1
-    A = getM(1, n_iteration)
+    A = getM(1, 1, n_iteration)
 
     # Calculate the error
     numerator_error = (w_static_solution - alpha_static_solution).T @ A @ (w_static_solution - alpha_static_solution)

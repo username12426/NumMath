@@ -389,44 +389,33 @@ def analytical_w_prime(x_k):
     return (q/(E*I)) * ((x_k**3)/6 - (l*x_k**2)/2 + (l**2*x_k)/2)
 
 
-fig, ax = (plt.subplots(1, 1))
-
 y = []
 x = []
 
 
 for n_iteration in range(1, 1000):
-
-    print(f'Iteration: {n_iteration}')
-
     reinitialize_B(n_iteration)
     h = l / n_iteration
     matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n_iteration)
 
-
+    # Analytic Solution
     w_static_solution = np.zeros(2*n_iteration+2)
     w_static_solution[::2] = analytical_w(np.linspace(0, l, n_iteration+1))
     w_static_solution[1::2] = analytical_w_prime(np.linspace(0, l, n_iteration+1))
 
-    print(w_static_solution.shape)
-
+    # Numeric Solution
     alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(h, n_iteration), getve(h, n_iteration))[:2*n_iteration+2]
 
-    print(alpha_static_solution.shape)
-
-    # The "A" matrix is Equivalent to the Mass Matrix for h = 1 and my = 1
+    # Generate A matrix from the M matrix
     my = 1
     A = getM(1, n_iteration)
 
-
+    # Calculate the error
     numerator_error = (w_static_solution - alpha_static_solution).T @ A @ (w_static_solution - alpha_static_solution)
     denominator_error = w_static_solution.T @ A @ w_static_solution
     relative_error = np.sqrt(numerator_error)/np.sqrt(denominator_error)
 
-    print(np.arange(n_iteration).shape)
-    print(w_static_solution[::2].shape)
-    print(w_static_solution[::2])
-
+    # Plot the Solutions (not part of Solution)
     fig, ax = plt.subplots(1, 2)
 
     ax[0].plot(np.linspace(0, 1, n_iteration + 1), alpha_static_solution[::2], c = "blue")
@@ -435,10 +424,8 @@ for n_iteration in range(1, 1000):
     ax[1].plot(np.arange(0, 1, 0.01), analytical_w_prime(np.arange(0, 1, 0.01)), c = "orange")
     plt.show()
 
-    print(relative_error)
-
-    y.append(np.log(relative_error))
-    x.append(np.log(n_iteration))
+    y.append(relative_error)
+    x.append(n_iteration)
 
 plt.plot(x, y)
 plt.show()

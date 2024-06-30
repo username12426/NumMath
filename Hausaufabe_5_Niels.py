@@ -24,16 +24,18 @@ E = 1  # Elastizitätsmodul in N/m^2
 I = 1  # Flächenträgheitsmoment in m^4
 q = 1  # Streckenlast in N/m
 
+'''
 B = np.array([[0, 1, 0],  # Auslenkung linkes Ende in m
               [0, 2, 0],  # Anstieg linkes Ende in 1
               [n, 3, 0],  # Moment rechtes Ende in Nm
               [n, 4, 0]])  # Querkraft rechtes Ende in N
+              
+'''
 
 
 # We need this function, because when we change the n, the B matrix is changes as well
-def reinitialize_B(n_element):
-    global B
-    B = np.array([[0, 1, 0],
+def generate_B(n_element):
+    return np.array([[0, 1, 0],
                   [0, 2, 0],
                   [n_element, 3, 0],
                   [n_element, 4, 0]])
@@ -62,16 +64,6 @@ def getindizes(n_elements: int):
     # We use sparce matrices, so we flatten the vector anyway!
     veki, vekl = np.meshgrid(nv, np.arange(0, n_elements)) #Create 2D  arrays  using nv and an array from 0 to n_elements-1
     veklli = (2 * vekl + veki).astype(int) #Calculate a 2D array from  vekl + veki
-
-    # Print the generated 3D and 2D arrays
-    print("3D-Array [l]", matl)
-    print("3D-Array [i]", mati)
-    print("3D-Array [j]", matj)
-    print("3D-Array [2l + i]", matlli)
-    print("3D-Array [2l + j]", matllj)
-    print("2D-Array [l]", vekl)
-    print("2D-Array [i]", veki)
-    print("2D-Array [veklli]", veklli)
 
     # Return the generated arrays
     return matl, mati, matj, matlli, matllj, vekl, veki, veklli
@@ -114,8 +106,6 @@ def getqbar(h, q, n_elements):
 '''
 Aufgabe 5, Massen-, Steifigkeitsmatrix, Streckenlastvektor
 '''
-# Define indices
-matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)
 
 
 # Mass matrix
@@ -149,7 +139,7 @@ Aufgabe 6 Variante 1
 # Sind und nicht ganz sicher ob wir "==" verwenden dürfen, deshalb gubt es zwei Varianten
 # B is not getting passed into the function, so we have to be careful when we redefine the B matrix!!
 
-def getC(n_elements):
+def getC(n_elements, B):
 
     E1_indices = B[B[:, 1] == 1, 0]
     E2_indices = B[B[:, 1] == 2, 0]
@@ -202,7 +192,7 @@ def getC(n_elements):
 # Variante 1. Das ist wieder die Variante mit dem ==, man kann das aber genau so auch alternativ ohne machen
 # The B matrix has to be updated to the current n before you use this function
 
-def getvn(n_elements):
+def getvn(n_elements, B):
 
     E3_indices = B[B[:, 1] == 3, 0]     # get all elements for K3, and extract the indices
     E4_indices = B[B[:, 1] == 4, 0]
@@ -242,9 +232,9 @@ def getvd():
 
 # Aufgabe 9
 
-def getMe(h, my, n_elements):
+def getMe(h, my, n_elements, B):
     M = getM(h, my, n_elements)
-    C = getC(n_elements)
+    C = getC(n_elements, B)
     C0 = np.zeros_like(C.toarray())
     I, J = np.meshgrid(np.arange(2), np.arange(2))
     zero_filler = coo_matrix((np.zeros(4), (I.flatten(), J.flatten()))).tocsr()
@@ -256,9 +246,9 @@ def getMe(h, my, n_elements):
     return Me
 
 
-def getSe(h, E, I, n_elements):
+def getSe(h, E, I, n_elements, B):
     S = getS(h, E, I, n_elements)
-    C = getC(n_elements)
+    C = getC(n_elements, B)
     I, J = np.meshgrid(np.arange(2), np.arange(2))
     zero_filler = coo_matrix((np.zeros(4), (I.flatten(), J.flatten()))).tocsr()
 
@@ -268,8 +258,8 @@ def getSe(h, E, I, n_elements):
     return Se
 
 
-def getve(h, q, n_elements):
-    vq_nq = getvq(h, q, n_elements) + getvn(n_elements)
+def getve(h, q, n_elements, B):
+    vq_nq = getvq(h, q, n_elements) + getvn(n_elements, B)
     v_E = scipy.sparse.vstack([vq_nq, getvd()])
     return v_E
 
@@ -280,9 +270,9 @@ Aufgabe 10
 n = 3
 h = l / n
 
-reinitialize_B(n)   # We changed the n to we have to update the B matrix
+B = generate_B(n)   # We changed the n to we have to update the B matrix
 matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)    # Build the matricies for the DGL n = 3
-alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(h, E, I, n), getve(h, E, n))  # Find the static solution
+alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(h, E, I, n, B), getve(h, E, n, B))  # Find the static solution
 
 '''
 Aufgabe 11
@@ -291,11 +281,12 @@ Aufgabe 11
 # Build the maticies for the DGL n = 100
 n_100 = 100
 h = l / n_100
-reinitialize_B(n_100)   # update the B matrix for the new n
+B = generate_B(n_100)   # update the B matrix for the new n
 matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n_100)    # update index matrices
-alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(h, E, I, n_100), getve(h, q, n_100))
+alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(h, E, I, n_100, B), getve(h, q, n_100, B))
 
-fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(18, 4), sharey='row')
+# Plot both solutions
+fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 4), sharey='row')
 ax[0].plot(np.arange(0, l, l/(n+1)), alpha_e_static_solution_n3[:2*n+2:2])
 ax[0].set_xlabel("x in m")
 ax[0].set_ylabel("w in m")
@@ -305,50 +296,70 @@ ax[1].set_title("Solution for n = 100")
 ax[1].set_ylabel("w in m")
 ax[1].set_xlabel("x in m")
 
-plt.show()
+plt.cla()
+# plt.show()
 
 
 '''
 Aufgabe 12
 '''
 
+
 n = 3
 q = 0   # Keine Streckenlast
 h = l/n
-reinitialize_B(n)   # update the B matrix for the new n
+B = generate_B(n)   # update the B matrix for the new n
 matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)
 
-M = getMe(h, my, n)
-S = getSe(h, E, I, n)
-v_e = getve(h, q, n)   # reinitialize the v_e vector, because the load has changed
+M_e = getMe(h, my, n, B)
+M = getM(h, my, n)
+S = getS(h, E, I, n)
+S_e = getSe(h, E, I, n, B)
+v_e = getve(h, q, n, B)   # reinitialize the v_e vector, because the load has changed
+v_q = getvq(h, q, n)
+v_n = getvn(n, B)
+C = getC(n, B)
 
-# use the static state as our startingpoint for the Newmark-algorithim
+def newmark_simmulation(timesteps, eta, beta, gamma):
 
-a_0_rows = np.arange(len(alpha_e_static_solution_n3), dtype=int)
-a_0_cols = np.zeros_like(alpha_e_static_solution_n3, dtype=int)
+    # use the static state as our startingpoint for the Newmark-algorithim
 
-a_p = coo_matrix((alpha_e_static_solution_n3, (a_0_rows, a_0_cols))).tocsr()    # deflections
-a_d_p = coo_matrix((np.zeros_like(alpha_e_static_solution_n3), (a_0_rows, a_0_cols))).tocsr()   # velocities
+    a_0_rows = np.arange(len(alpha_e_static_solution_n3), dtype=int)
+    a_0_cols = np.zeros_like(alpha_e_static_solution_n3, dtype=int)
 
-# In the static case there is no acceleration
-a_dd_p = coo_matrix((np.zeros_like(alpha_e_static_solution_n3), (a_0_rows, a_0_cols))).tocsr()  # acceleration
+    a_p = coo_matrix((alpha_e_static_solution_n3, (a_0_rows, a_0_cols))).tocsr()    # deflections
+
+    # In the static case there is no acceleration and initial velocity
+    a_d_p = coo_matrix((np.zeros_like(alpha_e_static_solution_n3), (a_0_rows, a_0_cols))).tocsr()   # velocities = 0
+    a_dd_p = coo_matrix((np.zeros_like(alpha_e_static_solution_n3), (a_0_rows, a_0_cols))).tocsr()  # acceleration = 0
 
 
-a_p_animation = np.zeros((100, 2*n+2))  # Data Matrix for the Animation
+    a_p_animation = np.zeros((timesteps, 2*n+2))  # Data Matrix for the Animation
+    total_energy_timesteps = np.zeros(timesteps)  # for Task 14
 
-# Iterate over n_p timesteps using the Newmark-Algorithm
-for time_step in range(n_p):
-    a_explicit = a_p + (a_d_p*my) + (0.5 - beta)*(a_dd_p*my**2)
-    a_d_explicit = a_d_p + (1 - gamma)*(a_dd_p*my)
+    # Iterate over n_p timesteps using the Newmark-Algorithm
+    for time_step in range(timesteps):
+        a_explicit = a_p + (a_d_p*eta) + (0.5 - beta)*(a_dd_p*eta**2)
+        a_d_explicit = a_d_p + (1 - gamma)*(a_dd_p*eta)
 
-    a_dd_p = scipy.sparse.linalg.spsolve(M + (S*beta*my**2), v_e - S.dot(a_explicit))
-    a_dd_p = coo_matrix((a_dd_p, (a_0_rows, a_0_cols))).tocsr()
+        a_dd_p = scipy.sparse.linalg.spsolve(M_e + (S_e*beta*eta**2), v_e - S_e.dot(a_explicit))
+        a_dd_p = coo_matrix((a_dd_p, (a_0_rows, a_0_cols))).tocsr()
 
-    a_p = a_explicit + beta*a_dd_p*my**2
+        a_p = a_explicit + beta*a_dd_p*eta**2
 
-    a_p_animation[time_step,:] = a_p.toarray()[:2*n+2].T    # only the first 2n+2 elements are coordinates
+        a_p_animation[time_step,:] = a_p.toarray()[:2*n+2].T    # only the first 2n+2 elements are coordinates
 
-    a_d_p = a_d_explicit + gamma*a_dd_p*my
+        a_d_p = a_d_explicit + gamma*a_dd_p*eta
+
+        loads_v = a_p[2*n+2:]
+
+        total_energy = 0.5*a_d_p[:2*n+2].T @ M @ a_d_p[:2*n+2] + (0.5*S*a_p[:2*n+2] - v_q - C @ loads_v - v_n).T @ a_p[:2*n+2]
+        total_energy_timesteps[time_step] = total_energy[0].toarray()
+
+    return a_p_animation, total_energy_timesteps
+
+a_p_animation, total_energy_newmark = newmark_simmulation(n_p, eta, beta, gamma)
+
 
 
 def update_frame(frame):
@@ -356,7 +367,7 @@ def update_frame(frame):
 
     x_knots = np.arange(n + 1) / (n + 1)  # we have n+1 deflections (for each knot)
 
-    plt.plot(x_knots, a_p_animation[frame, :2 * n + 2:2])  # Only pot the deviations, not the forces of the alpha vector
+    plt.plot(x_knots, a_p_animation[frame, :2 * n + 2:2])  # Only polt the deviations, not the forces of the alpha vector
 
     plt.xlim(0, 1)
     plt.ylim(-0.5, 0.5)
@@ -371,6 +382,8 @@ def getplot():
     fig, ax = plt.subplots()
     _ = animation.FuncAnimation(fig, update_frame, frames=frames, interval=100, repeat=False)
     plt.show()
+
+
 
 
 '''
@@ -388,32 +401,37 @@ def analytical_w_prime(x_k):
     return (q/(E*I)) * ((x_k**3)/6 - (l*x_k**2)/2 + (l**2*x_k)/2)
 
 
-y = []
-x = []
+n_error_test = 1000
+error_rates_plot = np.zeros(n_error_test)
 
 
-for n_iteration in range(1, 1000):
-    reinitialize_B(n_iteration)
+for n_iteration in range(1, n_error_test):
+
+    B = generate_B(n_iteration)
     h = l / n_iteration
     matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n_iteration)
 
     # Analytic Solution
-    w_static_solution = np.zeros(2*n_iteration+2)
+    w_static_solution = np.zeros(2*n_iteration+2)   # Assemble Analytical solution like the numerical solution
     w_static_solution[::2] = analytical_w(np.linspace(0, l, n_iteration+1))
     w_static_solution[1::2] = analytical_w_prime(np.linspace(0, l, n_iteration+1))
 
     # Numeric Solution
-    alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(h, E, I, n_iteration), getve(h, q, n_iteration))[:2*n_iteration+2]
+    alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(h, E, I, n_iteration, B), getve(h, q, n_iteration, B))[:2*n_iteration+2]
 
     # Generate A matrix from the M matrix
-    A = getM(1, 1, n_iteration)
+    A = getM(1, 1, n_iteration)     # A == Mass-matrix for h = 1 and my = 1
 
     # Calculate the error
-    numerator_error = (w_static_solution - alpha_static_solution).T @ A @ (w_static_solution - alpha_static_solution)
-    denominator_error = w_static_solution.T @ A @ w_static_solution
+    numerator_error = ((w_static_solution - alpha_static_solution).T @ A) @ (w_static_solution - alpha_static_solution)
+    denominator_error = (w_static_solution.T @ A) @ w_static_solution
     relative_error = np.sqrt(numerator_error)/np.sqrt(denominator_error)
 
+    error_rates_plot[n_iteration] = relative_error
+
+
     # Plot the Solutions (not part of Solution)
+    '''
     fig, ax = plt.subplots(1, 2)
 
     ax[0].plot(np.linspace(0, 1, n_iteration + 1), alpha_static_solution[::2], c = "blue")
@@ -421,12 +439,74 @@ for n_iteration in range(1, 1000):
     ax[1].plot(np.linspace(0, 1, n_iteration + 1), alpha_static_solution[1::2], c = "blue")
     ax[1].plot(np.arange(0, 1, 0.01), analytical_w_prime(np.arange(0, 1, 0.01)), c = "orange")
     plt.show()
+    '''
 
-    y.append(relative_error)
-    x.append(n_iteration)
+fig, ax = plt.subplots(1, 2, figsize=(14, 4))
+fig.suptitle("Relative Error Rates over Varying number of Knots n")
+ax[0].plot(np.arange(n_error_test), error_rates_plot)
+ax[0].set_xlabel(f"n in 1")
+ax[0].set_ylabel("error_L^2 in 1")
+ax[1].plot(np.log(np.arange(n_error_test)), np.log(error_rates_plot))
+ax[1].set_xlabel(f'log(n) in 1')
+ax[1].set_ylabel("log(error_L^2) in 1")
+plt.cla()
+# plt.show()
 
-plt.plot(x, y)
+'''
+Aufgabe 14
+'''
+
+_, total_energy_a = newmark_simmulation(n_p, eta, beta, gamma)
+eta = 1
+_, total_energy_b = newmark_simmulation(n_p, eta, beta, gamma)
+beta = 1
+gamma = 1
+eta = 0.1
+_, total_energy_c = newmark_simmulation(n_p, eta, beta, gamma)
+eta = 1
+_, total_energy_d = newmark_simmulation(n_p, eta, beta, gamma)
+
+
+fig = plt.figure(figsize=(12, 6))
+
+
+sub_1 = plt.subplot(2, 2, 1)
+sub_1.set_ylabel("E_ges in Joule (J)")
+sub_1.set_xlabel("t in s")
+sub_1.set_title("Verlauf der Gesamtenergie für zeitliche Schrittweite eta = 0.1s \n beta = 0.25 und gamma = 0.5")
+sub_1.plot(np.arange(0, 0.1 * n_p, 0.1), total_energy_a)
+
+
+sub_2 = plt.subplot(2, 2, 2)
+sub_2.set_ylabel("E_ges in Joule (J)")
+sub_2.set_xlabel("t in s")
+sub_2.set_title("Verlauf der Gesamtenergie für zeitliche Schrittweite eta = 1s \n beta = 0.25 und gamma = 0.5")
+sub_2.plot(np.arange(0, 1 * n_p, 1), total_energy_b)
+
+sub_3 = plt.subplot(2, 2, 3)
+sub_3.set_ylabel("E_ges in Joule (J)")
+sub_3.set_xlabel("t in s")
+sub_3.set_title("Verlauf der Gesamtenergie für zeitliche Schrittweite eta = 0.1s \n beta = 1 und gamma = 1")
+sub_3.plot(np.arange(0, 0.1 * n_p, 0.1), total_energy_c)
+
+sub_4 = plt.subplot(2, 2, 4)
+sub_4.set_ylabel("E_ges in Joule (J)")
+sub_4.set_xlabel("t in s")
+sub_4.set_title("Verlauf der Gesamtenergie für zeitliche Schrittweite eta = 1s \n beta = 1 und gamma = 1")
+sub_4.plot(np.arange(0, 1 * n_p, 1), total_energy_d)
+
+sub_1.set_ylim(0, max(total_energy_a) * 1.2)
+sub_2.set_ylim(0, max(total_energy_a) * 1.2)
+sub_3.set_ylim(0, max(total_energy_a) * 1.2)
+sub_4.set_ylim(0, max(total_energy_a) * 1.2)
+
+plt.tight_layout()
 plt.show()
+
+
+'''
+Aufgabe 15
+'''
 
 
 

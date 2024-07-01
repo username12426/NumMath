@@ -19,10 +19,16 @@ beta = 1 / 4  # Newmark- Koeffizient in 1
 gamma = 1 / 2  # Newmark- Koeffizient in 1
 eta = 0.1  # Zeitschrittweite in s
 l = 1  # Länge des Balkens in m
-my = 1  # Längenspezifische Masse in kg/m
-E = 1  # Elastizitätsmodul in N/m^2
-I = 1  # Flächenträgheitsmoment in m^4
-q = 1  # Streckenlast in N/m
+
+x_0 = 1
+x = 1   # Zufälliges x für die lamda Funktionen für Aufgabe 1 - 15
+
+my = lambda x: x_0  # Längenspezifische Masse in kg/m
+E = lambda x: x_0  # Elastizitätsmodul in N/m^2
+I = lambda x: x_0  # Flächenträgheitsmoment in m^4
+q = lambda x: x_0  # Streckenlast in N/m
+
+
 
 '''
 B = np.array([[0, 1, 0],  # Auslenkung linkes Ende in m
@@ -272,7 +278,7 @@ h = l / n
 
 B = generate_B(n)   # We changed the n to we have to update the B matrix
 matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)    # Build the matricies for the DGL n = 3
-alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(h, E, I, n, B), getve(h, E, n, B))  # Find the static solution
+alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(h, E(x), I(x), n, B), getve(h, E(x), n, B))  # Find the static solution
 
 '''
 Aufgabe 11
@@ -283,7 +289,7 @@ n_100 = 100
 h = l / n_100
 B = generate_B(n_100)   # update the B matrix for the new n
 matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n_100)    # update index matrices
-alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(h, E, I, n_100, B), getve(h, q, n_100, B))
+alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(h, E(x), I(x), n_100, B), getve(h, q(x), n_100, B))
 
 # Plot both solutions
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 4), sharey='row')
@@ -306,17 +312,17 @@ Aufgabe 12
 
 
 n = 3
-q = 0   # Keine Streckenlast
+q_static = 0   # Keine Streckenlast
 h = l/n
 B = generate_B(n)   # update the B matrix for the new n
 matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)
 
-M_e = getMe(h, my, n, B)
-M = getM(h, my, n)
-S = getS(h, E, I, n)
-S_e = getSe(h, E, I, n, B)
-v_e = getve(h, q, n, B)   # reinitialize the v_e vector, because the load has changed
-v_q = getvq(h, q, n)
+M_e = getMe(h, my(x), n, B)
+M = getM(h, my(x), n)
+S = getS(h, E(x), I(x), n)
+S_e = getSe(h, E(x), I(x), n, B)
+v_e = getve(h, q_static, n, B)   # reinitialize the v_e vector, because the load has changed
+v_q = getvq(h, q_static, n)
 v_n = getvn(n, B)
 C = getC(n, B)
 
@@ -390,15 +396,15 @@ def getplot():
 Aufgabe 13
 '''
 
-q = 1   # This task is about the static case so the load is not zero
+# This task is about the static case so the load is not zero q != 0
 
 
 def analytical_w(x_k):
-    return (q/(E*I)) * ((x_k**4)/24 - (l*x_k**3)/6 + ((l**2)*(x_k**2))/4)
+    return (q(x)/(E(x)*I(x))) * ((x_k**4)/24 - (l*x_k**3)/6 + ((l**2)*(x_k**2))/4)
 
 
 def analytical_w_prime(x_k):
-    return (q/(E*I)) * ((x_k**3)/6 - (l*x_k**2)/2 + (l**2*x_k)/2)
+    return (q(x)/(E(x)*I(x))) * ((x_k**3)/6 - (l*x_k**2)/2 + (l**2*x_k)/2)
 
 
 n_error_test = 1000
@@ -417,7 +423,7 @@ for n_iteration in range(1, n_error_test):
     w_static_solution[1::2] = analytical_w_prime(np.linspace(0, l, n_iteration+1))
 
     # Numeric Solution
-    alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(h, E, I, n_iteration, B), getve(h, q, n_iteration, B))[:2*n_iteration+2]
+    alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(h, E(x), I(x), n_iteration, B), getve(h, q(x), n_iteration, B))[:2*n_iteration+2]
 
     # Generate A matrix from the M matrix
     A = getM(1, 1, n_iteration)     # A == Mass-matrix for h = 1 and my = 1
@@ -449,8 +455,9 @@ ax[0].set_ylabel("error_L^2 in 1")
 ax[1].plot(np.log(np.arange(n_error_test)), np.log(error_rates_plot))
 ax[1].set_xlabel(f'log(n) in 1')
 ax[1].set_ylabel("log(error_L^2) in 1")
-plt.cla()
+
 # plt.show()
+plt.cla()
 
 '''
 Aufgabe 14
@@ -501,12 +508,68 @@ sub_3.set_ylim(0, max(total_energy_a) * 1.2)
 sub_4.set_ylim(0, max(total_energy_a) * 1.2)
 
 plt.tight_layout()
-plt.show()
+# plt.show()
+plt.cla()
 
 
 '''
 Aufgabe 15
 '''
+
+'''
+Aufgabe 16
+'''
+
+
+# Ich gehe von einer Äqidistanten Stützstellenverteilung aus
+
+def getstencil(k_quadrature, beam_length):
+
+    # Auf diieder aufgabe steht, dass x_n < 1 steht, muss da ber nicht x_n < l stehen?
+
+    quadrature_points = np.linspace(0, beam_length, k_quadrature+1)   # equidistant quadrature points
+    I, K = np.meshgrid(np.arange(k_quadrature+1), quadrature_points)
+    vandermonde_matrix = np.power(K, I)
+    v_plus1 = 1 / (I[0] + 1)
+    # We can interpret the formula for a as the solution of a system of equations
+    s = np.linalg.solve(vandermonde_matrix.T, v_plus1)
+
+    return s
+
+
+'''
+Aufgabe 17
+'''
+
+
+def getphi(k_quadrature, beam_length):
+
+    # isn't this solution completely independent of n ?
+
+    quadrature_points = np.linspace(0, beam_length, k_quadrature)   # equidistant quadrature points
+    evaluated_points = np.array([[1 - 3*(quadrature_points**2) + 2*(quadrature_points**3)],
+                                 [quadrature_points - 2*(quadrature_points**2) + quadrature_points**3],
+                                 [3*(quadrature_points**2) - 2*(quadrature_points**3)],
+                                 [-(quadrature_points**2) + (quadrature_points**3)]])
+
+    return evaluated_points
+
+
+
+def getddphi(k_quadrature, beam_length):
+    quadrature_points = np.linspace(0, beam_length, k_quadrature)   # equidistant quadrature points
+    evaluated_points = np.array([[-6 + 12*quadrature_points],
+                                 [-4 + 6*quadrature_points],
+                                 [6 - 12*quadrature_points],
+                                 [-2 + 6*quadrature_points]])
+
+    return evaluated_points
+
+
+
+
+
+
 
 
 

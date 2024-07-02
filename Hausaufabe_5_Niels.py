@@ -521,14 +521,15 @@ Aufgabe 16
 '''
 
 
-# Ich gehe von einer Äqidistanten Stützstellenverteilung aus
+# The refrence points go from K_tilde_under = {0, ... n_tilde_under} (Formula 260) that's why we have the + 1
+reference_coordinates = np.linspace(0, 1, ns+1)   # equidistant quadrature points
 
-def getstencil(k_quadrature, beam_length):
 
-    # Auf diieder aufgabe steht, dass x_n < 1 steht, muss da ber nicht x_n < l stehen?
+def getstencil(quadrature_points):
 
-    quadrature_points = np.linspace(0, beam_length, k_quadrature+1)   # equidistant quadrature points
-    I, K = np.meshgrid(np.arange(k_quadrature+1), quadrature_points)
+    # Berechnung des stencils auf einem Referenzelement
+
+    I, K = np.meshgrid(np.arange(len(quadrature_points)), quadrature_points)
     vandermonde_matrix = np.power(K, I)
     v_plus1 = 1 / (I[0] + 1)
     # We can interpret the formula for a as the solution of a system of equations
@@ -537,16 +538,18 @@ def getstencil(k_quadrature, beam_length):
     return s
 
 
+print(getstencil(reference_coordinates))
+
 '''
 Aufgabe 17
 '''
 
 
-def getphi(k_quadrature, beam_length):
+def getphi(quadrature_points):
 
-    # isn't this solution completely independent of n ?
+    # calculate the base function values on a reference element
+    # I don't understand why n is given in the task
 
-    quadrature_points = np.linspace(0, beam_length, k_quadrature)   # equidistant quadrature points
     evaluated_points = np.array([[1 - 3*(quadrature_points**2) + 2*(quadrature_points**3)],
                                  [quadrature_points - 2*(quadrature_points**2) + quadrature_points**3],
                                  [3*(quadrature_points**2) - 2*(quadrature_points**3)],
@@ -554,16 +557,53 @@ def getphi(k_quadrature, beam_length):
 
     return evaluated_points
 
+print(getphi(reference_coordinates))
 
 
-def getddphi(k_quadrature, beam_length):
-    quadrature_points = np.linspace(0, beam_length, k_quadrature)   # equidistant quadrature points
+
+def getddphi(quadrature_points):
     evaluated_points = np.array([[-6 + 12*quadrature_points],
                                  [-4 + 6*quadrature_points],
                                  [6 - 12*quadrature_points],
                                  [-2 + 6*quadrature_points]])
 
     return evaluated_points
+
+print(getddphi(reference_coordinates))
+
+
+def geth(n_elements, beam_length):
+    # This only works under the assumption that all beam elements are equally spaced
+    # Wich they have to be because the mass matrix was derived using this assumption
+    return np.ones(n_elements) * beam_length/n_elements
+
+
+def getTinv(n_elements, beam_length, quadrature_points):
+    # assuming an equidistant beam elements
+    # x_l are the first n-1 knot positions (base points of the reference coordinates)
+    x_l = np.arange(0, beam_length, beam_length/n_elements)
+    return np.outer(geth(n_elements, beam_length), quadrature_points) + x_l[:, np.newaxis]
+
+print(getTinv(3, 1, reference_coordinates))
+
+
+def getexp(n_elements):
+    i = np.arange(n_elements+1)
+    j = np.arange(n_elements+1)
+    J, I = np.meshgrid(j, i)
+    delta_i_1 = (I == 1).astype(int)
+    delta_i_3 = (I == 3).astype(int)
+    delta_j_1 = (J == 1).astype(int)
+    delta_j_3 = (J == 3).astype(int)
+
+    exp_3d = np.stack([delta_i_1 + delta_i_3 + delta_j_1 + delta_j_3] * n_elements, axis=0)
+
+    exp_2d = np.stack([delta_i_1[:, 0] + delta_i_3[:, 0]] * n_elements, axis=0)
+
+    return exp_3d, exp_2d
+
+print(getexp(3))
+
 
 
 

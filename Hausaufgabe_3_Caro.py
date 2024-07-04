@@ -161,7 +161,7 @@ def getC(n_elements):
     num_entries = len(C1_indices)
     # Create sparse matrix C1 using the combined indices
     C1 = coo_matrix((np.ones(num_entries), (C1_indices, np.arange(num_entries))),
-                    shape=(2 * n_elements + 2, num_entries))
+                    shape=(2 * n_elements + 2, num_entries)).tocsr()
 
     return C1
 
@@ -271,7 +271,7 @@ Aufgabe 10, Statik, Beschleunigung = 0
 # define h as segment length
 h = l / n
 # stiffness matrix
-SE = getSe(h, E, I, n)
+SE = getSe(h, E, I, n).tocsr()
 # element vector
 vE = getve(h, q, n, B)
 # solve the system of equations
@@ -295,8 +295,8 @@ def getplot(alpha_e_static_solution_n3, l, n):
     plt.title(f"Bending line for n = {n}")
     plt.xlabel("x in m")
     plt.ylabel("w in m")
-    plt.ylim(-0.2, 0.2)
-    plt.xlim(0, 1.2)
+    plt.ylim(-max(y)*1.2, max(y)*1.2)
+    plt.xlim(0, l * 1.2)
     plt.show()
 
 

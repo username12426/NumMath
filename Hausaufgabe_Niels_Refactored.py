@@ -440,17 +440,36 @@ def geth(parameters):
     h_2D = h_1D[:, np.newaxis]
     h_3D = h_2D[:, np.newaxis]
 
-    return h_2D, h_3D
+    return h_1D, h_2D, h_3D
 
 
 def getTinv(parameters, quadrature_points):
     x_l = np.arange(0, parameters.l, parameters.l / parameters.n)
-    tinv_2D = np.outer(geth(parameters.n, parameters.l), quadrature_points) + x_l[:, np.newaxis]
+    tinv_2D = np.outer(geth(parameters)[0], quadrature_points) + x_l[:, np.newaxis]
     tinv_3D = tinv_2D[:, np.newaxis, :]
     tinv_4D = tinv_2D[:, np.newaxis, np.newaxis, :]
 
     return tinv_3D, tinv_4D
 
+
+'''
+Aufgabe 19 
+'''
+
+
+def getMbar_Aufgabe19(parameters, indexes, quadrature_points):
+    h_3d = geth(parameters)[2]
+    exp = getexp(parameters)[0] + 1
+    factors = np.power(h_3d, exp)
+
+    phi_arrays = getphi(parameters, indexes, quadrature_points)
+    vectorized_my = np.vectorize(parameters.my)
+    integrand = vectorized_my(getTinv(parameters, quadrature_points)[1]) * phi_arrays[0] * phi_arrays[1]
+    integral = np.sum(integrand * getstencil(quadrature_points), axis=3)
+
+    m_element = integral * factors
+
+    return m_element
 
 
 if __name__ == "__main__":
@@ -699,6 +718,11 @@ if __name__ == "__main__":
     print(getphi(params, idx_18, reference_coordinates)[1])
 
 
+    '''
+    Aufgabe 19
+    '''
 
+    idx_19 = Indices(getindizes(params))
+    print(getMbar_Aufgabe19(params, idx_19, reference_coordinates))
 
 

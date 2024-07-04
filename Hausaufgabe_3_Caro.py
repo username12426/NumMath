@@ -5,7 +5,6 @@ Created on Wed Jul  3 08:12:19 2024
 @author: carol
 """
 
-
 import numpy as np
 import scipy.sparse
 from scipy.sparse import lil_matrix
@@ -36,30 +35,34 @@ B = np.array([[0, 1, 0],  # Auslenkung linkes Ende in m
               [n, 3, 0],  # Moment rechtes Ende in Nm
               [n, 4, 0]])  # Querkraft rechtes Ende in N
 
-
 '''
 Aufgabe 2, nützliche Arrays
 '''
+
 
 # a) 3D-Arrays
 def getindizes(n_elements: int):
     # a) 3D-Arrays
     nv = np.arange(0, 4, 1)  # Create an array with values [0, 1, 2, 3]
-    J, I = np.meshgrid(nv, nv)  #repeats the rows, columns of nv in J, I
+    J, I = np.meshgrid(nv, nv)  # repeats the rows, columns of nv in J, I
 
-    matl = np.arange(n_elements).reshape(n_elements, 1, 1) * np.ones((1, 4, 4)).astype(int) #Create a 3D array, where each element from 0 to n_elements-1 is repeated in shape(4,4)
-    mati = np.repeat(I[np.newaxis, :, :], n_elements, axis=0) #Repeat the  array I along the first axis n_elements times
-    matj = np.repeat(J[np.newaxis, :, :], n_elements, axis=0) #Repeat the  array J along the first axis n_elements times
+    matl = np.arange(n_elements).reshape(n_elements, 1, 1) * np.ones((1, 4, 4)).astype(
+        int)  # Create a 3D array, where each element from 0 to n_elements-1 is repeated in shape(4,4)
+    mati = np.repeat(I[np.newaxis, :, :], n_elements,
+                     axis=0)  # Repeat the  array I along the first axis n_elements times
+    matj = np.repeat(J[np.newaxis, :, :], n_elements,
+                     axis=0)  # Repeat the  array J along the first axis n_elements times
 
-    matlli = (2 * matl + mati).astype(int) #Calculate a 3D array from  matl & mati
-    matllj = (2 * matl + matj).astype(int) #Calculate a 3D array from  matl & matj
+    matlli = (2 * matl + mati).astype(int)  # Calculate a 3D array from  matl & mati
+    matllj = (2 * matl + matj).astype(int)  # Calculate a 3D array from  matl & matj
 
     # We decided to use a row vector to represent the vector here
     # You can use a column vector as well [[[0], [0], [0], [0]], [[1], [1], ..
     # It does not matter that much as long as we stay consistent with this vector (matrix)
     # We use sparce matrices, so we flatten the vector anyway!
-    veki, vekl = np.meshgrid(nv, np.arange(0, n_elements)) #Create 2D  arrays  using nv and an array from 0 to n_elements-1
-    veklli = (2 * vekl + veki).astype(int) #Calculate a 2D array from  vekl + veki
+    veki, vekl = np.meshgrid(nv, np.arange(0,
+                                           n_elements))  # Create 2D  arrays  using nv and an array from 0 to n_elements-1
+    veklli = (2 * vekl + veki).astype(int)  # Calculate a 2D array from  vekl + veki
 
     # Print the generated 3D and 2D arrays
     print("3D-Array [l]", matl)
@@ -79,14 +82,15 @@ def getindizes(n_elements: int):
 Aufgabe 3,4; Elementmatrizen, -vektoren
 '''
 
-#create Mass matrix
-def getMbar(h, my,  n_elements):
-    faktor = my * h / 420 # define factor
+
+# create Mass matrix
+def getMbar(h, my, n_elements):
+    faktor = my * h / 420  # define factor
     matrix = np.array(
         [[156, 22 * h, 54, -13 * h], [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2], [54, 13 * h, 156, -22 * h],
-         [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]]) # define matrix
-    M = faktor * matrix # scale matrix by the factor
-    M = np.tile(M, (n_elements, 1, 1)) # Replicate the scaled matrix for each element 
+         [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])  # define matrix
+    M = faktor * matrix  # scale matrix by the factor
+    M = np.tile(M, (n_elements, 1, 1))  # Replicate the scaled matrix for each element
     # Return the final 3D array
     return M
 
@@ -99,6 +103,7 @@ def getSbar(h, E, I, n_elements):
     S = faktor * matrix
     S = np.tile(S, (n_elements, 1, 1))
     return S
+
 
 # create element vector vekq the same way as M in getMbar
 def getqbar(h, q, n_elements):
@@ -118,7 +123,7 @@ matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n)
 
 # Mass matrix
 def getM(h, my, n_elements):
-    M_alt = getMbar(h, my,  n_elements)  # Define the data matrix
+    M_alt = getMbar(h, my, n_elements)  # Define the data matrix
     M_neu = coo_matrix((M_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()
     return M_neu
 
@@ -127,7 +132,8 @@ def getM(h, my, n_elements):
 # Analogous to getM for the data of the stiffness matrix
 def getS(h, E, I, n_elements):
     S_alt = getSbar(h, E, I, n_elements)
-    S_neu = coo_matrix((S_alt.flatten(), (matlli.flatten(), matllj.flatten()))).tocsr()# Convert the data matrix to a sparse matrix in COO format and then to CSR format
+    S_neu = coo_matrix((S_alt.flatten(), (matlli.flatten(),
+                                          matllj.flatten()))).tocsr()  # Convert the data matrix to a sparse matrix in COO format and then to CSR format
     return S_neu
 
 
@@ -143,6 +149,8 @@ def getvq(h, q, n_elements):
 '''
 Aufgabe 6 
 '''
+
+
 def getC(n_elements):
     E1_indices = B[B[:, 1] == 1, 0]  # Extract indices for deflection
     E2_indices = B[B[:, 1] == 2, 0]  # Extract indices for slope
@@ -152,15 +160,16 @@ def getC(n_elements):
 
     num_entries = len(C1_indices)
     # Create sparse matrix C1 using the combined indices
-    C1 = coo_matrix((np.ones(num_entries), (C1_indices, np.arange(num_entries))), shape=(2 * n_elements + 2, num_entries))
+    C1 = coo_matrix((np.ones(num_entries), (C1_indices, np.arange(num_entries))),
+                    shape=(2 * n_elements + 2, num_entries))
 
     return C1
-
 
 
 '''
 Aufgabe 7
 '''
+
 
 def getvn(n_elements, B):
     E3_indices = B[B[:, 1] == 3, 0]  # Extract indices for moments
@@ -185,11 +194,11 @@ def getvn(n_elements, B):
     return v_N
 
 
-
-
 '''
 Aufgabe 8
 '''
+
+
 def getvd(B):
     a_k_values = B[B[:, 1] == 1, 2]  # Extract deflection values and convert to column vector
     b_k_values = B[B[:, 1] == 2, 2]  # Extract slope values and convert to column vector
@@ -198,9 +207,8 @@ def getvd(B):
     b_k_sparse = scipy.sparse.csr_matrix(b_k_values)
     # Combine the vectors
     vD = scipy.sparse.vstack([a_k_sparse, b_k_sparse])
-    
-    return vD
 
+    return vD
 
 
 '''
@@ -211,7 +219,7 @@ Aufgabe 9
 # ist zero filler richtig definiert?
 
 
-#a Mass matrix
+# a Mass matrix
 def getMe(h, my, n):
     M = getM(h, my, n)
     C = getC(n)
@@ -223,10 +231,11 @@ def getMe(h, my, n):
     filler_C0_horizontal_stack = scipy.sparse.hstack([C0.T, zero_filler])
     # vertically merge M_C0 and filler_C0
     Me = scipy.sparse.vstack([M_C0_horizontal_stack, filler_C0_horizontal_stack])
-    
+
     return Me
 
-#b Stiffness matrix
+
+# b Stiffness matrix
 def getSe(h, E, I, n):
     S = getS(h, E, I, n)
     C = getC(n)
@@ -238,10 +247,11 @@ def getSe(h, E, I, n):
     filler_CT_horizontal_stack = scipy.sparse.hstack([CT, zero_filler])
     # vertically merge S_C and filler_CT
     Se = scipy.sparse.vstack([S_C_horizontal_stack, filler_CT_horizontal_stack])
-    
+
     return Se
 
-#c Element vector
+
+# c Element vector
 def getve(h, q, n, B):
     vq = getvq(h, q, n)
     vN = getvn(n, B)
@@ -251,14 +261,15 @@ def getve(h, q, n, B):
     vD = getvd(B)
     # merge and stack vertically
     ve = scipy.sparse.vstack([ve1, vD])
-    
+
     return ve
+
 
 '''
 Aufgabe 10, Statik, Beschleunigung = 0
 '''
 # define h as segment length
-h = l/n
+h = l / n
 # stiffness matrix
 SE = getSe(h, E, I, n)
 # element vector
@@ -270,44 +281,26 @@ alpha_e_static_solution_n3 = scipy.sparse.csr_matrix(alpha_e_static_solution_n)
 '''
 Aufgabe 11, pLot
 '''
+
+
 # n = 3
 def getplot(alpha_e_static_solution_n3, l, n):
     # Calculate support points
-    x = np.arange(0, l, l/(n+1))
+    x = np.linspace(0, l, n + 1)
     # Slice values to positions xi from the static solution
-    y = alpha_e_static_solution_n3[:2*n+2:2]
+    y = alpha_e_static_solution_n3[:2 * n + 2:2]
     # Generate plot
     plt.figure(figsize=(5, 5))
     plt.plot(x, y)
     plt.title(f"Bending line for n = {n}")
     plt.xlabel("x in m")
     plt.ylabel("w in m")
-    plt.ylim(-0.15, 0.15)
-    plt.xlim(0, 1)
+    plt.ylim(-0.2, 0.2)
+    plt.xlim(0, 1.2)
     plt.show()
- 
-getplot(alpha_e_static_solution_n, l, n)
-    
-# n = 100
-# calculations for new n
-n_100 = 100
-# new B
-B = np.array([[0, 1, 0],  
-              [0, 2, 0], 
-              [n_100, 3, 0],  
-              [n_100, 4, 0]]) 
-# indeces
-matl, mati, matj, matlli, matllj, vekl, veki, veklli = getindizes(n_100) 
-# define h as segment length
-h = l/n_100
-# stiffness matrix
-SE = getSe(h, E, I, n_100)
-# element vector
-vE = getve(h, q, n_100, B)
-# static solution
-alpha_e_static_solution_n = scipy.sparse.linalg.spsolve(SE, vE)
-    
 
-getplot(alpha_e_static_solution_n, l, n_100)
+
+getplot(alpha_e_static_solution_n, l, n)
+
 
 

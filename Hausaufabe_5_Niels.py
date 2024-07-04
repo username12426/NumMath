@@ -47,6 +47,7 @@ def generate_B(n_element):
                   [n_element, 4, 0]])
 
 
+
 '''
 Aufgabe 2, nützliche Arrays
 '''
@@ -238,13 +239,12 @@ def getvd():
 
 # Aufgabe 9
 
+
 def getMe(h, my, n_elements, B):
     M = getM(h, my, n_elements)
     C = getC(n_elements, B)
     C0 = np.zeros_like(C.toarray())
-    I, J = np.meshgrid(np.arange(2), np.arange(2))
-    zero_filler = coo_matrix((np.zeros(4), (I.flatten(), J.flatten()))).tocsr()
-
+    zero_filler = scipy.sparse.csr_matrix(np.zeros((C0.shape[1], C0.shape[1])))
     M_C0_horizontal_stack = scipy.sparse.hstack([M, C0])
     filler_C0_horizontal_stack = scipy.sparse.hstack([C0.T, zero_filler])
 
@@ -255,8 +255,7 @@ def getMe(h, my, n_elements, B):
 def getSe(h, E, I, n_elements, B):
     S = getS(h, E, I, n_elements)
     C = getC(n_elements, B)
-    I, J = np.meshgrid(np.arange(2), np.arange(2))
-    zero_filler = coo_matrix((np.zeros(4), (I.flatten(), J.flatten()))).tocsr()
+    zero_filler = scipy.sparse.csr_matrix(np.zeros((C.toarray().shape[1], C.toarray().shape[1])))
 
     S_C_horizontal_stack = scipy.sparse.hstack([S, C])
     C_filler_horizontal_stack = scipy.sparse.hstack([C.T, zero_filler])
@@ -302,8 +301,7 @@ ax[1].set_title("Solution for n = 100")
 ax[1].set_ylabel("w in m")
 ax[1].set_xlabel("x in m")
 
-plt.cla()
-# plt.show()
+plt.show()
 
 
 '''
@@ -390,6 +388,7 @@ def getplot():
     plt.show()
 
 
+getplot()
 
 
 '''
@@ -456,8 +455,8 @@ ax[1].plot(np.log(np.arange(n_error_test)), np.log(error_rates_plot))
 ax[1].set_xlabel(f'log(n) in 1')
 ax[1].set_ylabel("log(error_L^2) in 1")
 
-# plt.show()
-plt.cla()
+plt.show()
+
 
 '''
 Aufgabe 14
@@ -508,8 +507,7 @@ sub_3.set_ylim(0, max(total_energy_a) * 1.2)
 sub_4.set_ylim(0, max(total_energy_a) * 1.2)
 
 plt.tight_layout()
-# plt.show()
-plt.cla()
+plt.show()
 
 
 '''
@@ -605,7 +603,9 @@ def getexp(n_elements):
 print(getexp(3))
 
 
-
+'''
+Aufgabe 18
+'''
 
 
 

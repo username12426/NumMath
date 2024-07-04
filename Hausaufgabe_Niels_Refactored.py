@@ -323,7 +323,7 @@ def getstencil(quadrature_points):
 Aufgabe 17
 '''
 
-
+'''
 def getphi(quadrature_points):
 
     # calculate the base function values on a reference element
@@ -336,8 +336,9 @@ def getphi(quadrature_points):
 
     return evaluated_points
 
+'''
 
-
+'''
 def getddphi(quadrature_points):
     evaluated_points = np.array([[-6 + 12*quadrature_points],
                                  [-4 + 6*quadrature_points],
@@ -345,20 +346,23 @@ def getddphi(quadrature_points):
                                  [-2 + 6*quadrature_points]])
 
     return evaluated_points
+'''
 
-
+'''
 def geth(parameters):
     # This only works under the assumption that all beam elements are equally spaced
     # Wich they have to be because the mass matrix was derived using this assumption
     return np.ones(parameters.n) * parameters.l/parameters.n
+    
+'''
 
-
+'''
 def getTinv(parameters, quadrature_points):
     # assuming an equidistant beam elements
     # x_l are the first n-1 knot positions (base points of the reference coordinates)
     x_l = np.arange(0, parameters.l, parameters.l/parameters.n)
     return np.outer(geth(parameters.n, parameters.l), quadrature_points) + x_l[:, np.newaxis]
-
+'''
 
 def getexp(parameters):
     i = np.arange(parameters.n+1)
@@ -379,6 +383,74 @@ def getexp(parameters):
 '''
 Aufgabe 18
 '''
+
+
+def getphi(parameters:object, indexes:object, quadrature_points):
+    phi = np.array([[1 - 3 * (quadrature_points ** 2) + 2 * (quadrature_points ** 3)],
+                                 [quadrature_points - 2 * (quadrature_points ** 2) + quadrature_points ** 3],
+                                 [3 * (quadrature_points ** 2) - 2 * (quadrature_points ** 3)],
+                                 [-(quadrature_points ** 2) + (quadrature_points ** 3)]])
+
+    phi_i_lijk = np.zeros((parameters.n, 4, 4, parameters.ns+1))
+    phi_j_lijk = np.zeros((parameters.n, 4, 4, parameters.ns+1))
+    phi_i_lik = np.zeros((parameters.n, 4, parameters.ns+1))
+
+    phi_i_lik[indexes.veki == 0] = phi[0]
+    phi_i_lik[indexes.veki == 1] = phi[1]
+    phi_i_lik[indexes.veki == 2] = phi[2]
+    phi_i_lik[indexes.veki == 3] = phi[3]
+
+    phi_i_lijk[indexes.mati == 0] = phi[0]
+    phi_i_lijk[indexes.mati == 1] = phi[1]
+    phi_i_lijk[indexes.mati == 2] = phi[2]
+    phi_i_lijk[indexes.mati == 3] = phi[3]
+
+    phi_j_lijk[indexes.matj == 0] = phi[0]
+    phi_j_lijk[indexes.matj == 1] = phi[1]
+    phi_j_lijk[indexes.matj == 2] = phi[2]
+    phi_j_lijk[indexes.matj == 3] = phi[3]
+
+    return phi_i_lijk, phi_j_lijk, phi_i_lik
+
+
+def getddphi(parameters:object, indexes:object, quadrature_points):
+    ddphi = np.array([[-6 + 12 * quadrature_points],
+                                 [-4 + 6 * quadrature_points],
+                                 [6 - 12 * quadrature_points],
+                                 [-2 + 6 * quadrature_points]])
+
+    ddphi_i_lijk = np.zeros((parameters.n, 4, 4, parameters.ns + 1))
+    ddphi_j_lijk = np.zeros((parameters.n, 4, 4, parameters.ns + 1))
+
+    ddphi_i_lijk[indexes.mati == 0] = ddphi[0]
+    ddphi_i_lijk[indexes.mati == 1] = ddphi[1]
+    ddphi_i_lijk[indexes.mati == 2] = ddphi[2]
+    ddphi_i_lijk[indexes.mati == 3] = ddphi[3]
+
+    ddphi_j_lijk[indexes.matj == 0] = ddphi[0]
+    ddphi_j_lijk[indexes.matj == 1] = ddphi[1]
+    ddphi_j_lijk[indexes.matj == 2] = ddphi[2]
+    ddphi_j_lijk[indexes.matj == 3] = ddphi[3]
+
+    return ddphi_i_lijk, ddphi_j_lijk
+
+
+def geth(parameters):
+    h_1D = np.ones(parameters.n) * parameters.l / parameters.n
+    h_2D = h_1D[:, np.newaxis]
+    h_3D = h_2D[:, np.newaxis]
+
+    return h_2D, h_3D
+
+
+def getTinv(parameters, quadrature_points):
+    x_l = np.arange(0, parameters.l, parameters.l / parameters.n)
+    tinv_2D = np.outer(geth(parameters.n, parameters.l), quadrature_points) + x_l[:, np.newaxis]
+    tinv_3D = tinv_2D[:, np.newaxis, :]
+    tinv_4D = tinv_2D[:, np.newaxis, np.newaxis, :]
+
+    return tinv_3D, tinv_4D
+
 
 
 if __name__ == "__main__":
@@ -617,6 +689,14 @@ if __name__ == "__main__":
     reference_coordinates = np.linspace(0, 1, ns + 1)  # equidistant quadrature points
 
     print(getstencil(reference_coordinates))
+
+    '''
+    Aufgabe 18
+    '''
+
+    params.set_n(3)
+    idx_18 = Indices(getindizes(params))
+    print(getphi(params, idx_18, reference_coordinates)[1])
 
 
 

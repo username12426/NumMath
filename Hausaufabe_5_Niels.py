@@ -324,21 +324,21 @@ v_q = getvq(h, q_static, n)
 v_n = getvn(n, B)
 C = getC(n, B)
 
-def newmark_simmulation(timesteps, eta, beta, gamma):
+def newmark_simmulation(timesteps, eta, beta, gamma, n_elements, static_solution):
 
     # use the static state as our startingpoint for the Newmark-algorithim
 
-    a_0_rows = np.arange(len(alpha_e_static_solution_n3), dtype=int)
-    a_0_cols = np.zeros_like(alpha_e_static_solution_n3, dtype=int)
+    a_0_rows = np.arange(len(static_solution), dtype=int)
+    a_0_cols = np.zeros_like(static_solution, dtype=int)
 
-    a_p = coo_matrix((alpha_e_static_solution_n3, (a_0_rows, a_0_cols))).tocsr()    # deflections
+    a_p = coo_matrix((static_solution, (a_0_rows, a_0_cols))).tocsr()    # deflections
 
     # In the static case there is no acceleration and initial velocity
-    a_d_p = coo_matrix((np.zeros_like(alpha_e_static_solution_n3), (a_0_rows, a_0_cols))).tocsr()   # velocities = 0
-    a_dd_p = coo_matrix((np.zeros_like(alpha_e_static_solution_n3), (a_0_rows, a_0_cols))).tocsr()  # acceleration = 0
+    a_d_p = coo_matrix((np.zeros_like(static_solution), (a_0_rows, a_0_cols))).tocsr()   # velocities = 0
+    a_dd_p = coo_matrix((np.zeros_like(static_solution), (a_0_rows, a_0_cols))).tocsr()  # acceleration = 0
 
 
-    a_p_animation = np.zeros((timesteps, 2*n+2))  # Data Matrix for the Animation
+    a_p_animation = np.zeros((timesteps, 2*n_elements+2))  # Data Matrix for the Animation
     total_energy_timesteps = np.zeros(timesteps)  # for Task 14
 
     # Iterate over n_p timesteps using the Newmark-Algorithm
@@ -351,18 +351,18 @@ def newmark_simmulation(timesteps, eta, beta, gamma):
 
         a_p = a_explicit + beta*a_dd_p*eta**2
 
-        a_p_animation[time_step,:] = a_p.toarray()[:2*n+2].T    # only the first 2n+2 elements are coordinates
+        a_p_animation[time_step,:] = a_p.toarray()[:2*n_elements+2].T    # only the first 2n+2 elements are coordinates
 
         a_d_p = a_d_explicit + gamma*a_dd_p*eta
 
-        loads_v = a_p[2*n+2:]
+        loads_v = a_p[2*n_elements+2:]
 
-        total_energy = 0.5*a_d_p[:2*n+2].T @ M @ a_d_p[:2*n+2] + (0.5*S*a_p[:2*n+2] - v_q - C @ loads_v - v_n).T @ a_p[:2*n+2]
+        total_energy = 0.5*a_d_p[:2*n_elements+2].T @ M @ a_d_p[:2*n_elements+2] + (0.5*S*a_p[:2*n_elements+2] - v_q - C @ loads_v - v_n).T @ a_p[:2*n_elements+2]
         total_energy_timesteps[time_step] = total_energy[0].toarray()
 
     return a_p_animation, total_energy_timesteps
 
-a_p_animation, total_energy_newmark = newmark_simmulation(n_p, eta, beta, gamma)
+a_p_animation, total_energy_newmark = newmark_simmulation(n_p, eta, beta, gamma, n, alpha_e_static_solution_n3)
 
 
 
@@ -370,7 +370,6 @@ def update_frame(frame):
     plt.cla()  # Clear current plot
 
     x_knots = np.arange(n + 1) / (n + 1)  # we have n+1 deflections (for each knot)
-
     plt.plot(x_knots, a_p_animation[frame, :2 * n + 2:2])  # Only polt the deviations, not the forces of the alpha vector
 
     plt.xlim(0, 1)
@@ -462,15 +461,15 @@ plt.show()
 Aufgabe 14
 '''
 
-_, total_energy_a = newmark_simmulation(n_p, eta, beta, gamma)
+_, total_energy_a = newmark_simmulation(n_p, eta, beta, gamma, n, alpha_e_static_solution_n3)
 eta = 1
-_, total_energy_b = newmark_simmulation(n_p, eta, beta, gamma)
+_, total_energy_b = newmark_simmulation(n_p, eta, beta, gamma, n, alpha_e_static_solution_n3)
 beta = 1
 gamma = 1
 eta = 0.1
-_, total_energy_c = newmark_simmulation(n_p, eta, beta, gamma)
+_, total_energy_c = newmark_simmulation(n_p, eta, beta, gamma, n, alpha_e_static_solution_n3)
 eta = 1
-_, total_energy_d = newmark_simmulation(n_p, eta, beta, gamma)
+_, total_energy_d = newmark_simmulation(n_p, eta, beta, gamma, n, alpha_e_static_solution_n3)
 
 
 fig = plt.figure(figsize=(12, 6))

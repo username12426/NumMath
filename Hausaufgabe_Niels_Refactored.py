@@ -386,14 +386,14 @@ Aufgabe 18
 
 
 def getphi(parameters:object, indexes:object, quadrature_points):
-    phi = np.array([[1 - 3 * (quadrature_points ** 2) + 2 * (quadrature_points ** 3)],
-                                 [quadrature_points - 2 * (quadrature_points ** 2) + quadrature_points ** 3],
-                                 [3 * (quadrature_points ** 2) - 2 * (quadrature_points ** 3)],
-                                 [-(quadrature_points ** 2) + (quadrature_points ** 3)]])
+    phi = np.array([1 - 3 * (quadrature_points ** 2) + 2 * (quadrature_points ** 3),
+                                 quadrature_points - 2 * (quadrature_points ** 2) + quadrature_points ** 3,
+                                 3 * (quadrature_points ** 2) - 2 * (quadrature_points ** 3),
+                                 -(quadrature_points ** 2) + (quadrature_points ** 3)])
 
-    phi_i_lijk = np.zeros((parameters.n, 4, 4, parameters.ns+1))
-    phi_j_lijk = np.zeros((parameters.n, 4, 4, parameters.ns+1))
-    phi_i_lik = np.zeros((parameters.n, 4, parameters.ns+1))
+    phi_i_lijk = np.zeros((parameters.n, 4, 4, len(quadrature_points)))
+    phi_j_lijk = np.zeros((parameters.n, 4, 4, len(quadrature_points)))
+    phi_i_lik = np.zeros((parameters.n, 4, len(quadrature_points)))
 
     phi_i_lik[indexes.veki == 0] = phi[0]
     phi_i_lik[indexes.veki == 1] = phi[1]
@@ -410,14 +410,14 @@ def getphi(parameters:object, indexes:object, quadrature_points):
     phi_j_lijk[indexes.matj == 2] = phi[2]
     phi_j_lijk[indexes.matj == 3] = phi[3]
 
-    return phi_i_lijk, phi_j_lijk, phi_i_lik
+    return phi_i_lijk, phi_j_lijk, phi_i_lik, phi
 
 
 def getddphi(parameters:object, indexes:object, quadrature_points):
-    ddphi = np.array([[-6 + 12 * quadrature_points],
-                                 [-4 + 6 * quadrature_points],
-                                 [6 - 12 * quadrature_points],
-                                 [-2 + 6 * quadrature_points]])
+    ddphi = np.array([-6 + 12 * quadrature_points,
+                    -4 + 6 * quadrature_points,
+                    6 - 12 * quadrature_points,
+                    -2 + 6 * quadrature_points])
 
     ddphi_i_lijk = np.zeros((parameters.n, 4, 4, parameters.ns + 1))
     ddphi_j_lijk = np.zeros((parameters.n, 4, 4, parameters.ns + 1))
@@ -587,8 +587,8 @@ if __name__ == "__main__":
 
     params.set_n(3)
     idx_10 = Indices(getindizes(params))
-    alpha_e_static_solution_n3 = scipy.sparse.linalg.spsolve(getSe(params, idx_10), getve(params, idx_10))  # Find the static solution
-
+    alpha_e_static_solution_n3_arr = scipy.sparse.linalg.spsolve(getSe(params, idx_10), getve(params, idx_10))  # Find the static solution
+    # alpha_e_static_solution_n3
     '''
     Aufgabe 11
     '''
@@ -600,7 +600,7 @@ if __name__ == "__main__":
 
     # Plot both solutions
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 4), sharey='row')
-    ax[0].plot(np.arange(0, params.l, params.l / (3 + 1)), alpha_e_static_solution_n3[:2 * 3 + 2:2])
+    ax[0].plot(np.arange(0, params.l, params.l / (3 + 1)), alpha_e_static_solution_n3_arr[:2 * 3 + 2:2])
     ax[0].set_xlabel("x in m")
     ax[0].set_ylabel("w in m")
     ax[0].set_title(f"Solution for n = 3")
@@ -628,7 +628,7 @@ if __name__ == "__main__":
     v_n = getvn(params)
     C = getC(params)
 
-    a_p_animation, total_energy_newmark = newmark_simmulation(params, alpha_e_static_solution_n3)
+    a_p_animation, total_energy_newmark = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
 
     # getplot()
 
@@ -692,15 +692,15 @@ if __name__ == "__main__":
 
     params.set_n(3)
 
-    _, total_energy_a = newmark_simmulation(params, alpha_e_static_solution_n3)
+    _, total_energy_a = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
     params.eta = 1
-    _, total_energy_b = newmark_simmulation(params, alpha_e_static_solution_n3)
+    _, total_energy_b = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
     params.beta = 1
     params.gamma = 1
     params.eta = 0.1
-    _, total_energy_c = newmark_simmulation(params, alpha_e_static_solution_n3)
+    _, total_energy_c = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
     params.eta = 1
-    _, total_energy_d = newmark_simmulation(params, alpha_e_static_solution_n3)
+    _, total_energy_d = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
 
     fig = plt.figure(figsize=(12, 6))
 
@@ -773,15 +773,34 @@ if __name__ == "__main__":
     def getplot_Aufgabe20(parameters, indexes):
         h_2D = geth(parameters)[1]
         exp = getexp(parameters)[1]  # 0 = 3D, 1 = 2D
-        factors = np.power(h_2D, exp)
+        factors = np.power(h_2D, exp)[0]    # because h_l is constant along the beam, i only need one factor
+
+        # Maybe i need to update this to work with unevenly spaced h?
 
         k = np.arange(0, parameters.nh + 1)
-        x_k = k / parameters.n
+        x_k = k / parameters.nh     # Spots were we approximate the function additionally (on refrence element)
 
+        A_elements = getphi(parameters, indexes, x_k)[3].T * factors    # When h is constant the A matrix is constant for all l
+        A_elements = np.tile(A_elements, (parameters.n, 1, 1))
 
-  
+        J, K = np.meshgrid(np.arange(4), k)     # Generate the indices
 
+        J_indices = np.tile(J, (parameters.n, 1, 1))
+        K_indices = np.tile(K, (parameters.n, 1, 1))
+        L = np.arange(parameters.n).reshape(parameters.n, 1, 1) * np.ones((1, parameters.nh+1, 4)).astype(int)
 
+        K_indices = (parameters.nh * L + K_indices).astype(int)     # Assemble after the given Formula
+
+        J_indices = (2 * L + J_indices).astype(int)
+
+        # If data gets assigns twice the coo_matrix sums the entries, that's why you have to filter duplicates
+        mask = np.zeros_like(A_elements.flatten(), dtype=bool)
+        mask[np.unique(K_indices.flatten() * A_elements.shape[1] + J_indices.flatten(), return_index=True)[1]] = True
+
+        A = coo_matrix((A_elements.flatten()[mask], (K_indices.flatten()[mask], J_indices.flatten()[mask]))).tocsr()
+
+        return A
+    
     getplot_Aufgabe20(params, idx_19)
 
 

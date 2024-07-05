@@ -458,31 +458,68 @@ Aufgabe 19
 
 
 def getMbar_Aufgabe19(parameters, indexes, quadrature_points):
-    h_3d = geth(parameters)[2]
+    h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
     exp = getexp(parameters)[0] + 1
     factors = np.power(h_3d, exp)
 
     phi_arrays = getphi(parameters, indexes, quadrature_points)
     vectorized_my = np.vectorize(parameters.my)
     integrand = vectorized_my(getTinv(parameters, quadrature_points)[1]) * phi_arrays[0] * phi_arrays[1]
-    integral = np.sum(integrand * getstencil(quadrature_points), axis=3)
+    integral = np.dot(integrand, getstencil(quadrature_points))
 
     m_element = integral * factors
 
     return m_element
 
 
+def getSbar_Aufgabe19(parameters, indexes, quadrature_points):
+    h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
+    exp = getexp(parameters)[0] - 3
+    factors = np.power(h_3d, exp)
+
+    ddphi_arrays = getddphi(parameters, indexes, quadrature_points)
+    vectorized_E = np.vectorize(parameters.E)
+    vectorized_I = np.vectorize(parameters.E)
+    t_inv = getTinv(parameters, quadrature_points)[1]   # 4D array
+
+    integrand = vectorized_E(t_inv)*vectorized_I(t_inv)*ddphi_arrays[0]*ddphi_arrays[1]
+    integral = np.dot(integrand, getstencil(quadrature_points))    # axis 3 means sum along k dimension
+
+    s_element = integral * factors
+
+    return s_element
+
+
+def getqbar_Aufgabe19(parameters, indexes, quadrature_points):
+    h_2D = geth(parameters)[1]
+    exp = getexp(parameters)[1] + 1     # 0 = 3D, 1 = 2D
+    factors = np.power(h_2D, exp)
+
+    phi_arrays = getphi(parameters, indexes, quadrature_points)
+    vectorized_q = np.vectorize(parameters.q)
+    t_inv = getTinv(parameters, quadrature_points)[0]
+
+    integrand = vectorized_q(t_inv) * phi_arrays[2]
+    integral = np.dot(integrand, getstencil(quadrature_points))
+
+    q_element = factors * integral
+
+    return q_element
+
+
+
+
+
 if __name__ == "__main__":
 
     n = 3  # Anzahl der Elemente in 1
-    nh = 1  # Anzahl der zusätzlichen Auswertungspunkte je Element in 1
+    nh = 5  # Anzahl der zusätzlichen Auswertungspunkte je Element in 1
     ns = 7  # Ordnung der Quadratur in 1
     n_p = 100  # Anzahl der Zeitschritte in 1
     beta = 1 / 4  # Newmark- Koeffizient in 1
     gamma = 1 / 2  # Newmark- Koeffizient in 1
     eta = 0.1  # Zeitschrittweite in s
     l = 1  # Länge des Balkens in m
-
     x_0 = 1
     x = 1  # Zufälliges x für die lamda Funktionen für Aufgabe 1 - 15
 
@@ -496,7 +533,7 @@ if __name__ == "__main__":
                   [0, 2, 0],  # Anstieg linkes Ende in 1
                   [n, 3, 0],  # Moment rechtes Ende in Nm
                   [n, 4, 0]])  # Querkraft rechtes Ende in N
-    '''
+                      '''
 
     class Parameters:
         def __init__(self):
@@ -572,7 +609,7 @@ if __name__ == "__main__":
     ax[1].set_ylabel("w in m")
     ax[1].set_xlabel("x in m")
 
-    plt.show()
+    # plt.show()
 
     '''
     Aufgabe 12
@@ -593,7 +630,7 @@ if __name__ == "__main__":
 
     a_p_animation, total_energy_newmark = newmark_simmulation(params, alpha_e_static_solution_n3)
 
-    getplot()
+    # getplot()
 
     '''
     Aufgabe 13
@@ -647,7 +684,7 @@ if __name__ == "__main__":
     ax[1].set_xlabel(f'log(n) in 1')
     ax[1].set_ylabel("log(error_L^2) in 1")
 
-    plt.show()
+    # plt.show()
 
     '''
     Aufgabe 14
@@ -697,7 +734,7 @@ if __name__ == "__main__":
     sub_4.set_ylim(0, max(total_energy_a) * 1.2)
 
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
 
     '''
@@ -724,5 +761,27 @@ if __name__ == "__main__":
 
     idx_19 = Indices(getindizes(params))
     print(getMbar_Aufgabe19(params, idx_19, reference_coordinates))
+    print(getSbar_Aufgabe19(params, idx_19, reference_coordinates))
+    print(getqbar_Aufgabe19(params, idx_19, reference_coordinates))
+
+
+    '''
+    Aufgabe 20
+    '''
+
+
+    def getplot_Aufgabe20(parameters, indexes):
+        h_2D = geth(parameters)[1]
+        exp = getexp(parameters)[1]  # 0 = 3D, 1 = 2D
+        factors = np.power(h_2D, exp)
+
+        k = np.arange(0, parameters.nh + 1)
+        x_k = k / parameters.n
+
+
+  
+
+
+    getplot_Aufgabe20(params, idx_19)
 
 

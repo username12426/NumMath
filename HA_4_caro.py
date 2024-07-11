@@ -408,17 +408,22 @@ if __name__ == "__main__":
     alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(params, idx_11), getve(params, idx_11))
 
     # Plot both solutions
-    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 4), sharey='row')
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 4))#, sharey='row')
+    
+    # Plot for n = 3
     ax[0].plot(np.arange(0, params.l, params.l / (3 + 1)), alpha_e_static_solution_n3_arr[:2 * 3 + 2:2])
     ax[0].set_xlabel("x in m")
     ax[0].set_ylabel("w in m")
     ax[0].set_title("Solution for n = 3")
+    ax[0].set_ylim(-0.15, 0.15)
+    
+    # Plot for n = 100
     ax[1].plot(np.arange(0, params.l, params.l / (params.n + 1)), alpha_e_static_solution_n100[:2 * params.n + 2:2])
     ax[1].set_title("Solution for n = 100")
     ax[1].set_ylabel("w in m")
     ax[1].set_xlabel("x in m")
+    ax[1].set_ylim(-0.15, 0.15)
 
-    # plt.show()
 
     '''
     Aufgabe 12

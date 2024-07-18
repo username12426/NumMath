@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jul 15 20:02:40 2024
@@ -320,7 +321,29 @@ def analytical_w(parameters, x_k):
 def analytical_w_prime(parameters, x_k):
     return (parameters.q(x) / (parameters.E(x) * parameters.I(x))) * ((x_k**3) / 6 - (parameters.l * x_k**2) / 2 + (parameters.l**2 * x_k) / 2)
 
+'''
+Aufgabe 16
+'''
 
+def getstencil(parameters):
+    
+    k_tilde = parameters.ns + 1 # create number of supporting points
+    x_k_tilde = np.linspace(0, 1, params.ns + 1) # create supporting points
+    # create vandermonde matrix
+    X, vandermonde = np.meshgrid(x_k_tilde, x_k_tilde) # vandermonde without powers
+    powers = np.arange(0, k_tilde, 1 ) # create powers for vandermondematrix
+    vanderm = vandermonde ** powers # create final vandermonde matrix
+    
+    # calculate integrated vamdermonde matrix
+    numero = np.ones(len(vanderm[0]))
+    divider = np.arange(0, len(vanderm[0]), 1)
+    vanderm_integ = numero / (divider + 1)
+    
+    # calculate stencil
+    stencil = np.linalg.solve(vanderm.T, vanderm_integ)
+    
+    #return stencil
+    return stencil
 
 
 
@@ -336,9 +359,7 @@ if __name__ == "__main__":
     l = 1  # Länge des Balkens in m
     x_0 = 1
     x = 1  # Zufälliges x für die lamda Funktionen für Aufgabe 1 - 15
-    '''
-    könnte man nicht x durch x_0 ersetzen da beides auf 1 gesetzt ist
-    '''
+    
 
     '''
     Aufgabe 15
@@ -570,6 +591,14 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
     
+    '''
+    Aufgabe 16
+    '''
+    # test für ns = 3
+    params.set_n(3)
+    params.ns = 3
+    stencil = getstencil(params)
+    print("stencil", stencil)
     
     
    

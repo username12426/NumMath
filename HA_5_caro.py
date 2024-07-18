@@ -301,6 +301,17 @@ Aufgabe 13
 '''
 # calculate the analytic solution for the given problem
 
+def getA(parameters: object, indexes: object):
+    h = 1   # The A-Matrix is onyl equal to the M matrix when h = 1
+    faktor = parameters.my(x) * h / 420  # define factor
+    matrix = np.array(
+        [[156, 22 * h, 54, -13 * h], [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2], [54, 13 * h, 156, -22 * h],
+         [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])  # define matrix
+    A = faktor * matrix  # scale matrix by the factor
+    A = np.tile(A, (parameters.n, 1, 1))  # Replicate the scaled matrix for each element
+    A_neu = coo_matrix((A.flatten(), (indexes.matlli.flatten(), indexes.matllj.flatten()))).tocsr()
+    return A_neu
+
 def analytical_w(parameters, x_k):
     return (parameters.q(x) / (parameters.E(x)*parameters.I(x))) * ((x_k**4) / 24 - (parameters.l * x_k**3) / 6 + ((parameters.l**2) * (x_k**2)) / 4)
 
@@ -484,11 +495,7 @@ if __name__ == "__main__":
         '''
         Matrix A wird falsch berechnet !!!!!!!!!!!!!!!
         '''
-        A = getM(params, idx_13) 
-        # if n_iteration == 3:
-        #     A = A * 420
-        #     print("A", A.toarray())
-        
+        A = getA(params, idx_13) 
         
         # calculate relative error
         numerator_error = (w_ana - alpha_static_solution).T @ A @ (w_ana - alpha_static_solution)
@@ -568,6 +575,7 @@ if __name__ == "__main__":
     axs[1, 1].set_ylabel('E_ges in J')
 
     # Zeige das Ergebnis an
+    plt.tight_layout(
     plt.show()
     
     '''

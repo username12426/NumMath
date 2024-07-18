@@ -575,7 +575,7 @@ if __name__ == "__main__":
     axs[1, 1].set_ylabel('E_ges in J')
 
     # Zeige das Ergebnis an
-    plt.tight_layout(
+    plt.tight_layout()
     plt.show()
     
     '''

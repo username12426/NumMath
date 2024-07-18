@@ -299,8 +299,8 @@ def getplot(a_p_animation):
 '''
 Aufgabe 13
 '''
-# calculate the analytic solution for the given problem
 
+#calculate matrix A
 def getA(parameters: object, indexes: object):
     h = 1   # The A-Matrix is onyl equal to the M matrix when h = 1
     faktor = parameters.my(x) * h / 420  # define factor
@@ -311,7 +311,8 @@ def getA(parameters: object, indexes: object):
     A = np.tile(A, (parameters.n, 1, 1))  # Replicate the scaled matrix for each element
     A_neu = coo_matrix((A.flatten(), (indexes.matlli.flatten(), indexes.matllj.flatten()))).tocsr()
     return A_neu
-
+    
+# calculate the analytic solution for the given problem
 def analytical_w(parameters, x_k):
     return (parameters.q(x) / (parameters.E(x)*parameters.I(x))) * ((x_k**4) / 24 - (parameters.l * x_k**3) / 6 + ((parameters.l**2) * (x_k**2)) / 4)
 
@@ -452,8 +453,8 @@ if __name__ == "__main__":
     v_n = getvn(params)
     C = getC(params)
 
-    #a_p_animation, total_energy_newmark = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
-    #newmark_simmulation(params, alpha_e_static_solution_n3_arr)
+    a_p_animation, total_energy_newmark = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
+    newmark_simmulation(params, alpha_e_static_solution_n3_arr)
     
     
     
@@ -465,13 +466,12 @@ if __name__ == "__main__":
     params.set_q(1)
     idx_13 = Indices(getindizes(params))
     
-    print("params.h", params.h)
     error_rates_plot = []
     n_plot = np.arange(1, 1001, 1)
     #iterate n from 1 to 1000
     for n_iteration in range(1, 1001, 1):
-        
-        #print(n_iteration)
+
+        #set parameters
         params.set_n(n_iteration)
         params.set_q(1)
         idx_13 = Indices(getindizes(params))
@@ -480,30 +480,22 @@ if __name__ == "__main__":
         
         #calculate analytic solution
         w_x = analytical_w(params, x)
-        #print("w_x", w_x)
         w_x_d = analytical_w_prime(params, x)
-        #print("w_x_d", w_x_d)
+        #combine in one vektor
         w_ana = np.zeros(2 * len(w_x))
         w_ana[::2] = w_x
         w_ana[1::2] = w_x_d
-        #print("w_ana", w_ana)
+       
         #calculate numeric solution
         alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(params, idx_13), getve(params, idx_13))[:2 * len(w_x)]
         
         # create matrix A
-        
-        '''
-        Matrix A wird falsch berechnet !!!!!!!!!!!!!!!
-        '''
         A = getA(params, idx_13) 
         
         # calculate relative error
         numerator_error = (w_ana - alpha_static_solution).T @ A @ (w_ana - alpha_static_solution)
-        
         denominator_error = w_ana.T @ A @ w_ana
-        
         relative_error = np.sqrt(numerator_error) / np.sqrt( denominator_error)
-        #print("relative_error", relative_error)
         error_rates_plot.append(relative_error)
     
     n_error_test = 1000
@@ -578,9 +570,6 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.show()
     
-    '''
-    # mich stört noch das der erste pik fehlt, bei a, b vgl. mit Musterlösung
-    '''
     
     
    

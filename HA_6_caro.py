@@ -328,7 +328,7 @@ Aufgabe 16
 def getstencil(parameters):
     
     k_tilde = parameters.ns + 1 # create number of supporting points
-    x_k_tilde = np.linspace(0, 1, params.ns + 1) # create supporting points
+    x_k_tilde = np.linspace(0, parameters.l, params.ns + 1) # create supporting points
     # create vandermonde matrix
     X, vandermonde = np.meshgrid(x_k_tilde, x_k_tilde) # vandermonde without powers
     powers = np.arange(0, k_tilde, 1 ) # create powers for vandermondematrix
@@ -344,6 +344,99 @@ def getstencil(parameters):
     
     #return stencil
     return stencil
+
+'''
+Aufgabe 17
+'''
+# a)
+
+def getphi(parameters):
+    
+    #create Vektor of suoporting points
+    x = np.linspace(0, parameters.l, params.ns + 1) 
+    
+    #initialisiere leere matrix
+    matrix = np.zeros((4, parameters.ns + 1))
+    
+    #initialisiere Formfunktionen
+    phi_0 = lambda x: 1 - 3*x**2 + 2*x**3
+    phi_1 = lambda x: x - 2*x**2 + x**3
+    phi_2 = lambda x: 3*x**2 - 2*x**3
+    phi_3 = lambda x: -x**2 + x**3
+    
+    # Berechnung der Werte an den Stützstellen
+    matrix[0, :] = phi_0(x)
+    matrix[1, :] = phi_1(x)
+    matrix[2, :] = phi_2(x)
+    matrix[3, :] = phi_3(x)
+    
+    return matrix
+
+# b)
+def getddphi(parameters):
+    #create Vektor of suoporting points
+    x = np.linspace(0, parameters.l, params.ns + 1) 
+    
+    #initialisiere leere matrix
+    matrix = np.zeros((4, parameters.ns + 1))
+    
+    #initialisiere Formfunktionen
+    phi_0 = lambda x: -6 + 12 * x
+    phi_1 = lambda x: -4 + 6*x
+    phi_2 = lambda x: 6 - 12*x
+    phi_3 = lambda x: -2 + 6*x
+    
+    # Berechnung der Werte an den Stützstellen
+    matrix[0, :] = phi_0(x)
+    matrix[1, :] = phi_1(x)
+    matrix[2, :] = phi_2(x)
+    matrix[3, :] = phi_3(x)
+    
+    return matrix
+    
+# c)
+def geth(parameters):
+    # annahme abstände zwischen den Stützstellen sind konstant
+    faktor = parameters.l / parameters.n
+    h = np.ones(parameters.n) * faktor
+    return h
+    
+# d)
+def getTinv(parameters):
+    # Annahme Stützstellen equally spaced
+    # Stützstellen x_k gleichmäßig im Intervall [0, 1]
+    x_k = np.linspace(0, parameters.l, parameters.ns + 1)
+    
+    # Knotenpositionen x_l im Intervall [0, l]
+    x_l = np.linspace(0, parameters.l, parameters.n + 1)
+    
+    # Berechne die Elementlänge h_l
+    # geht nur da equal für alle sonst muss man vektor nehmen
+    h_l = l / n
+    
+    # Berechnung der Rücktransformationen ohne Schleife
+    T_inv_matrix = h_l * x_k + x_l[:, np.newaxis]
+    T_inv_matrix = T_inv_matrix[:-1, :]
+    
+    return T_inv_matrix
+
+#e)    
+def getexp(parameters):
+    i = np.arange(parameters.n+1)
+    j = np.arange(parameters.n+1)
+    J, I = np.meshgrid(j, i)
+    delta_i_1 = (I == 1).astype(int)
+    delta_i_3 = (I == 3).astype(int)
+    delta_j_1 = (J == 1).astype(int)
+    delta_j_3 = (J == 3).astype(int)
+
+    exp_3d = np.stack([delta_i_1 + delta_i_3 + delta_j_1 + delta_j_3] * parameters.n, axis=0)
+
+    exp_2d = np.stack([delta_i_1[:, 0] + delta_i_3[:, 0]] * parameters.n, axis=0)
+
+    return exp_3d, exp_2d
+
+
 
 
 
@@ -599,6 +692,22 @@ if __name__ == "__main__":
     params.ns = 3
     stencil = getstencil(params)
     print("stencil", stencil)
+    
+    '''
+    Aufgabe 17
+    '''
+    params.set_n(3)
+    params.ns = 7
+    a = getphi(params)
+    print("a", a)
+    b = getddphi(params)
+    print("b", b)
+    h = geth(params)
+    print("h", h)
+    T_inv = getTinv(params)
+    print("T_inv", T_inv)
+    e3, e2 =  getexp(params)
+    print("e3", e3, "e2", e2)
     
     
    

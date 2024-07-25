@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jul 23 14:50:11 2024
+
+@author: carol
+"""
+
 
 # -*- coding: utf-8 -*-
 """
@@ -346,17 +353,19 @@ def getstencil(parameters):
     return stencil
 
 '''
-Aufgabe 17
+Aufgabe 17, 18
 '''
 # a)
 
-def getphi(parameters):
-    
+def getphi(parameters, indexes):
+    # x = quadrature points = Stützstellen
     #create Vektor of suoporting points
-    x = np.linspace(0, parameters.l, params.ns + 1) 
+    quadrature_points = np.linspace(0, parameters.l, params.ns + 1) 
     
     #initialisiere leere matrix
-    matrix = np.zeros((4, parameters.ns + 1))
+    phi_i_lijk = np.zeros((parameters.n, 4, 4, len(quadrature_points)))
+    phi_j_lijk = np.zeros((parameters.n, 4, 4, len(quadrature_points)))
+    phi_i_lik = np.zeros((parameters.n, 4, len(quadrature_points)))
     
     #initialisiere Formfunktionen
     phi_0 = lambda x: 1 - 3*x**2 + 2*x**3
@@ -364,61 +373,88 @@ def getphi(parameters):
     phi_2 = lambda x: 3*x**2 - 2*x**3
     phi_3 = lambda x: -x**2 + x**3
     
-    # Berechnung der Werte an den Stützstellen
-    matrix[0, :] = phi_0(x)
-    matrix[1, :] = phi_1(x)
-    matrix[2, :] = phi_2(x)
-    matrix[3, :] = phi_3(x)
+    # Weist die Formfunktionen basierend auf den Indexwerten zu
+    phi_i_lik[indexes.veki == 0] = phi_0(quadrature_points)
+    phi_i_lik[indexes.veki == 1] = phi_1(quadrature_points)
+    phi_i_lik[indexes.veki == 2] = phi_2(quadrature_points)
+    phi_i_lik[indexes.veki == 3] = phi_3(quadrature_points)
     
-    return matrix
+    phi_i_lijk[indexes.mati == 0] = phi_0(quadrature_points)
+    phi_i_lijk[indexes.mati == 1] = phi_1(quadrature_points)
+    phi_i_lijk[indexes.mati == 2] = phi_2(quadrature_points)
+    phi_i_lijk[indexes.mati == 3] = phi_3(quadrature_points)
+
+    phi_j_lijk[indexes.matj == 0] = phi_0(quadrature_points)
+    phi_j_lijk[indexes.matj == 1] = phi_1(quadrature_points)
+    phi_j_lijk[indexes.matj == 2] = phi_2(quadrature_points)
+    phi_j_lijk[indexes.matj == 3] = phi_3(quadrature_points)
+
+    # Gibt die berechneten Arrays zurück
+    return phi_i_lijk, phi_j_lijk, phi_i_lik
+    
+    
 
 # b)
-def getddphi(parameters):
+def getddphi(parameters, indexes):
     #create Vektor of suoporting points
-    x = np.linspace(0, parameters.l, params.ns + 1) 
-    
-    #initialisiere leere matrix
-    matrix = np.zeros((4, parameters.ns + 1))
+    quadrature_points = np.linspace(0, parameters.l, params.ns + 1) 
     
     #initialisiere Formfunktionen
-    phi_0 = lambda x: -6 + 12 * x
-    phi_1 = lambda x: -4 + 6*x
-    phi_2 = lambda x: 6 - 12*x
-    phi_3 = lambda x: -2 + 6*x
+    ddphi_0 = lambda x: -6 + 12 * x
+    ddphi_1 = lambda x: -4 + 6*x
+    ddphi_2 = lambda x: 6 - 12*x
+    ddphi_3 = lambda x: -2 + 6*x
     
-    # Berechnung der Werte an den Stützstellen
-    matrix[0, :] = phi_0(x)
-    matrix[1, :] = phi_1(x)
-    matrix[2, :] = phi_2(x)
-    matrix[3, :] = phi_3(x)
+    # Initialisiert leere Arrays für die zweiten Ableitungen der Formfunktionen
+    ddphi_i_lijk = np.zeros((parameters.n, 4, 4, parameters.ns + 1))
+    ddphi_j_lijk = np.zeros((parameters.n, 4, 4, parameters.ns + 1))
+
+    # Weist die zweiten Ableitungen basierend auf den Indexwerten zu
+    ddphi_i_lijk[indexes.mati == 0] = ddphi_0(quadrature_points)
+    ddphi_i_lijk[indexes.mati == 1] = ddphi_1(quadrature_points)
+    ddphi_i_lijk[indexes.mati == 2] = ddphi_2(quadrature_points)
+    ddphi_i_lijk[indexes.mati == 3] = ddphi_3(quadrature_points)
+
+    ddphi_j_lijk[indexes.matj == 0] = ddphi_0(quadrature_points)
+    ddphi_j_lijk[indexes.matj == 1] = ddphi_1(quadrature_points)
+    ddphi_j_lijk[indexes.matj == 2] = ddphi_2(quadrature_points)
+    ddphi_j_lijk[indexes.matj == 3] = ddphi_3(quadrature_points)
+
+    return ddphi_i_lijk, ddphi_j_lijk
     
-    return matrix
+    
     
 # c)
 def geth(parameters):
     # annahme abstände zwischen den Stützstellen sind konstant
     faktor = parameters.l / parameters.n
-    h = np.ones(parameters.n) * faktor
-    return h
+    h_1D = np.ones(parameters.n) * faktor
+    # Erweiterung  in 2D
+    h_2D = h_1D[:, np.newaxis]
+    # Erweiterung  in 3D
+    h_3D = h_2D[:, np.newaxis]
+
+    return h_1D, h_2D, h_3D
+
+
     
 # d)
 def getTinv(parameters):
-    # Annahme Stützstellen equally spaced
-    # Stützstellen x_k gleichmäßig im Intervall [0, 1]
-    x_k = np.linspace(0, parameters.l, parameters.ns + 1)
     
-    # Knotenpositionen x_l im Intervall [0, l]
-    x_l = np.linspace(0, parameters.l, parameters.n + 1)
-    
-    # Berechne die Elementlänge h_l
-    # geht nur da equal für alle sonst muss man vektor nehmen
-    h_l = l / n
-    
-    # Berechnung der Rücktransformationen ohne Schleife
-    T_inv_matrix = h_l * x_k + x_l[:, np.newaxis]
-    T_inv_matrix = T_inv_matrix[:-1, :]
-    
-    return T_inv_matrix
+    quadrature_points = np.linspace(0, parameters.l, params.ns + 1) 
+    # Berechnet die Knotenpositionen
+    x_l = np.arange(0, parameters.l, parameters.l / parameters.n)
+    # Berechnet die Rücktransformation in 2D
+    tinv_2D = np.outer(geth(parameters)[0], quadrature_points) + x_l[:, np.newaxis]
+    # Erweiterung der Rücktransformation in 3D
+    tinv_3D = tinv_2D[:, np.newaxis, :]
+    # Erweiterung der Rücktransformation in 4D
+    tinv_4D = tinv_2D[:, np.newaxis, np.newaxis, :]
+
+    # Gibt die berechneten Rücktransformationen in 3D und 4D zurück
+    return tinv_3D, tinv_4D
+
+
 
 #e)    
 def getexp(parameters):
@@ -435,6 +471,65 @@ def getexp(parameters):
     exp_2d = np.stack([delta_i_1[:, 0] + delta_i_3[:, 0]] * parameters.n, axis=0)
 
     return exp_3d, exp_2d
+
+'''
+Aufgabe 19
+'''
+def getMbar_Aufgabe19(parameters, indexes):
+    quadrature_points = np.linspace(0, parameters.l, params.ns + 1) 
+    h_3d = geth(parameters)[2]  
+    exp = getexp(parameters)[0] + 1
+    factors = h_3d ** exp
+
+    phi_arrays = getphi(parameters, indexes)
+    vectorized_my = np.vectorize(parameters.my) # make it usable for vektors
+    integrand = vectorized_my(getTinv(parameters) @ phi_arrays[0] q phi_arrays[1])
+    integral = np.dot(integrand, getstencil(parameters))
+
+    m_element = integral * factors
+
+    return m_element
+
+
+def getSbar_Aufgabe19(parameters, indexes, quadrature_points):
+    h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
+    exp = getexp(parameters)[0] - 3
+    factors = np.power(h_3d, exp)
+
+    ddphi_arrays = getddphi(parameters, indexes, quadrature_points)
+    vectorized_E = np.vectorize(parameters.E)
+    vectorized_I = np.vectorize(parameters.E)
+    t_inv = getTinv(parameters, quadrature_points)[1]   # 4D array
+
+    integrand = vectorized_E(t_inv)*vectorized_I(t_inv)*ddphi_arrays[0]*ddphi_arrays[1]
+    integral = np.dot(integrand, getstencil(quadrature_points))    # axis 3 means sum along k dimension
+
+    s_element = integral * factors
+
+    return s_element
+
+
+def getqbar_Aufgabe19(parameters, indexes, quadrature_points):
+    h_2D = geth(parameters)[1]
+    exp = getexp(parameters)[1] + 1     # 0 = 3D, 1 = 2D
+    factors = np.power(h_2D, exp)
+
+    phi_arrays = getphi(parameters, indexes, quadrature_points)
+    vectorized_q = np.vectorize(parameters.q)
+    t_inv = getTinv(parameters, quadrature_points)[0]
+
+    integrand = vectorized_q(t_inv) * phi_arrays[2]
+    integral = np.dot(integrand, getstencil(quadrature_points))
+
+    q_element = factors * integral
+
+    return q_element
+
+    
+
+
+
+
 
 
 
@@ -694,13 +789,14 @@ if __name__ == "__main__":
     print("stencil", stencil)
     
     '''
-    Aufgabe 17
+    Aufgabe 17, 18
     '''
     params.set_n(3)
     params.ns = 7
-    a = getphi(params)
+    idx_18 = Indices(getindizes(params))
+    a = getphi(params, idx_18)
     print("a", a)
-    b = getddphi(params)
+    b = getddphi(params, idx_18)
     print("b", b)
     h = geth(params)
     print("h", h)
@@ -709,5 +805,9 @@ if __name__ == "__main__":
     e3, e2 =  getexp(params)
     print("e3", e3, "e2", e2)
     
+   
+
+    
     
    
+

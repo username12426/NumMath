@@ -1,13 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jul 23 14:50:11 2024
-
-@author: carol
-"""
-
-
-# -*- coding: utf-8 -*-
-"""
 Created on Mon Jul 15 20:02:40 2024
 
 @author: Fischbach, Stefanski, Breda, Erhard
@@ -474,22 +466,25 @@ def getexp(parameters):
 Aufgabe 19
 '''
 def getMbar_Aufgabe19(parameters, indexes):
-    quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1) 
-    h_3d = geth(parameters)[2]  
+    quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1)
+    
+    h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
     exp = getexp(parameters)[0] + 1
-    factors = h_3d ** exp
+    factors = np.power(h_3d, exp)
 
-    phi_arrays = getphi(parameters, indexes)
-    vectorized_my = np.vectorize(parameters.my) # make it usable for vektors
-    integrand = vectorized_my(getTinv(parameters) @ phi_arrays[0] @ phi_arrays[1])
-    integral = np.dot(integrand, getstencil(parameters))
+    phi_arrays = getphi(parameters, indexes, quadrature_points)
+    vectorized_my = np.vectorize(parameters.my)
+    integrand = vectorized_my(getTinv(parameters, quadrature_points)[1]) * phi_arrays[0] * phi_arrays[1]
+    integral = np.dot(integrand, getstencil(quadrature_points))
 
     m_element = integral * factors
 
     return m_element
 
 
-def getSbar_Aufgabe19(parameters, indexes, quadrature_points):
+def getSbar_Aufgabe19(parameters, indexes):
+    quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1)
+    
     h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
     exp = getexp(parameters)[0] - 3
     factors = np.power(h_3d, exp)
@@ -507,7 +502,9 @@ def getSbar_Aufgabe19(parameters, indexes, quadrature_points):
     return s_element
 
 
-def getqbar_Aufgabe19(parameters, indexes, quadrature_points):
+def getqbar_Aufgabe19(parameters, indexes):
+    quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1)
+    
     h_2D = geth(parameters)[1]
     exp = getexp(parameters)[1] + 1     # 0 = 3D, 1 = 2D
     factors = np.power(h_2D, exp)
@@ -793,15 +790,15 @@ if __name__ == "__main__":
     params.ns = 7
     idx_18 = Indices(getindizes(params))
     a = getphi(params, idx_18)
-    #print("a", a)
+    print("a", a)
     b = getddphi(params, idx_18)
-    #print("b", b)
+    print("b", b)
     h = geth(params)
-    #print("h", h)
+    print("h", h)
     T_inv = getTinv(params)
-    #print("T_inv", T_inv)
+    print("T_inv", T_inv)
     e3, e2 =  getexp(params)
-    #print("e3", e3, "e2", e2)
+    print("e3", e3, "e2", e2)
     
    
 

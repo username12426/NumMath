@@ -445,7 +445,13 @@ def geth(parameters):
 
 def getTinv(parameters, quadrature_points):
     x_l = np.arange(0, parameters.l, parameters.l / parameters.n)
+    print("Aragne Problem getTinv")
+    print(parameters.l)
+    print(x_l)
     tinv_2D = np.outer(geth(parameters)[0], quadrature_points) + x_l[:, np.newaxis]
+    print(f'n: {parameters.n}')
+    print(f'n_tilde: {parameters.ns}')
+    print(tinv_2D.shape)
     tinv_3D = tinv_2D[:, np.newaxis, :]
     tinv_4D = tinv_2D[:, np.newaxis, np.newaxis, :]
 
@@ -760,6 +766,7 @@ if __name__ == "__main__":
     '''
 
     idx_19 = Indices(getindizes(params))
+
     print(getMbar_Aufgabe19(params, idx_19, reference_coordinates))
     print(getSbar_Aufgabe19(params, idx_19, reference_coordinates))
     print(getqbar_Aufgabe19(params, idx_19, reference_coordinates))
@@ -769,8 +776,9 @@ if __name__ == "__main__":
     Aufgabe 20
     '''
 
+    
 
-    def getplot_Aufgabe20(parameters, indexes):
+    def getplot_Aufgabe20(parameters, indexes, solution_vector):
         h_2D = geth(parameters)[1]
         exp = getexp(parameters)[1]  # 0 = 3D, 1 = 2D
         factors = np.power(h_2D, exp)[0]    # because h_l is constant along the beam, i only need one factor
@@ -799,8 +807,25 @@ if __name__ == "__main__":
 
         A = coo_matrix((A_elements.flatten()[mask], (K_indices.flatten()[mask], J_indices.flatten()[mask]))).tocsr()
 
-        return A
-    
-    getplot_Aufgabe20(params, idx_19)
+
+        print(scipy.sparse.csr_matrix(solution_vector[:2*parameters.n+2]).shape)
+        print(A.shape)
+
+        print(A.toarray() @ solution_vector[:2*parameters.n+2])
+
+
+        w = A.dot(scipy.sparse.csr_matrix(solution_vector[:2*parameters.n+2]))
+
+        print(w.toarray())
+        return
+
+
+
+    # Example usage
+    params.set_n(3)
+    params.nh = 1
+    idx_19 = Indices(getindizes(params))
+    getplot_Aufgabe20(params, idx_19, alpha_e_static_solution_n3_arr)
+
 
 

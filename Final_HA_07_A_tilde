@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jul 29 18:41:15 2024
+Created on Tue Jul 30 10:08:09 2024
 
-@author: Fischbach, Stefanski, Breda, Erhard
+@author: carol
 """
+
 
 import numpy as np
 import scipy.sparse
@@ -412,10 +413,10 @@ def getphi(parameters, indexes, quadrature_points):
     phi_j_lijk[indexes.matj == 1] = phi_1(quadrature_points)
     phi_j_lijk[indexes.matj == 2] = phi_2(quadrature_points)
     phi_j_lijk[indexes.matj == 3] = phi_3(quadrature_points)
-    
+
     phi = np.array([phi_0(quadrature_points), phi_1(quadrature_points), phi_2(quadrature_points), phi_3(quadrature_points)])
 
-    # Gibt die berechneten Arrays zurück
+    
     return phi_i_lijk, phi_j_lijk, phi_i_lik, phi
 
 
@@ -632,13 +633,13 @@ if __name__ == "__main__":
     params.set_n(3)
     idx_10 = Indices(getindizes(params))
     alpha_e_static_solution_n3_arr = scipy.sparse.linalg.spsolve(getSe(params, idx_10),
-                                                                  getve(params, idx_10))  # Find the static solution
+                                                                 getve(params, idx_10))  # Find the static solution
     # alpha_e_static_solution_n3
     '''
     Aufgabe 11
     '''
 
-     # Build the maticies for the DGL n = 100
+    # Build the maticies for the DGL n = 100
     params.set_n(100)
     idx_11 = Indices(getindizes(params))  # update index matrices
     alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(params, idx_11), getve(params, idx_11))
@@ -659,7 +660,7 @@ if __name__ == "__main__":
     ax[1].set_xlim(0, 1)
     ax[1].set_ylim(-0.15, 0.15)
 
-     # plt.show()
+    # plt.show()
 
     '''
     Aufgabe 12
@@ -693,36 +694,36 @@ if __name__ == "__main__":
     n_plot = np.arange(1, 1001, 1)
     # iterate n from 1 to 1000
     for n_iteration in range(1, 1001, 1):
-         # set parameters
-         params.set_n(n_iteration)
-         params.set_q(1)
-         idx_13 = Indices(getindizes(params))
+        # set parameters
+        params.set_n(n_iteration)
+        params.set_q(1)
+        idx_13 = Indices(getindizes(params))
 
-         x = np.linspace(0, params.l, n_iteration + 1)  # set supporting points
+        x = np.linspace(0, params.l, n_iteration + 1)  # set supporting points
 
-         # calculate analytic solution
-         w_x = analytical_w(params, x)
-         w_x_d = analytical_w_prime(params, x)
-         # combine in one vektor
-         w_ana = np.zeros(2 * len(w_x))
-         w_ana[::2] = w_x
-         w_ana[1::2] = w_x_d
+        # calculate analytic solution
+        w_x = analytical_w(params, x)
+        w_x_d = analytical_w_prime(params, x)
+        # combine in one vektor
+        w_ana = np.zeros(2 * len(w_x))
+        w_ana[::2] = w_x
+        w_ana[1::2] = w_x_d
 
-         # calculate numeric solution
-         alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(params, idx_13), getve(params, idx_13))[:2 * len(w_x)]
+        # calculate numeric solution
+        alpha_static_solution = scipy.sparse.linalg.spsolve(getSe(params, idx_13), getve(params, idx_13))[:2 * len(w_x)]
 
-         # create matrix A
-         A = getA(params, idx_13)
+        # create matrix A
+        A = getA(params, idx_13)
 
-         # calculate relative error
-         numerator_error = (w_ana - alpha_static_solution).T @ A @ (w_ana - alpha_static_solution)
-         denominator_error = w_ana.T @ A @ w_ana
-         relative_error = np.sqrt(numerator_error) / np.sqrt(denominator_error)
-         error_rates_plot.append(relative_error)
+        # calculate relative error
+        numerator_error = (w_ana - alpha_static_solution).T @ A @ (w_ana - alpha_static_solution)
+        denominator_error = w_ana.T @ A @ w_ana
+        relative_error = np.sqrt(numerator_error) / np.sqrt(denominator_error)
+        error_rates_plot.append(relative_error)
 
     n_error_test = 1000
 
-     
+    #     '''
 
     fig, ax = plt.subplots(1, 2, figsize=(14, 4))
     fig.suptitle("Relative Error Rates over Varying number of Knots n")
@@ -733,7 +734,7 @@ if __name__ == "__main__":
     ax[1].set_xlabel('log(n) in 1')
     ax[1].set_ylabel("log(error_L^2) in 1")
 
-     # plt.show()
+    # plt.show()
 
     '''
     Aufgabe 14
@@ -798,15 +799,15 @@ if __name__ == "__main__":
     params.set_n(3)
     params.ns = 3
     stencil = getstencil(params)
-    
+   #  print("stencil", stencil)
 
     '''
     Aufgabe 17, 18
     '''
-    quadrature_points = np.linspace(0, params.l, params.ns + 1)
     params.set_n(3)
     params.ns = 7
     idx_18 = Indices(getindizes(params))
+    quadrature_points = np.linspace(0, params.l, params.ns + 1)
     a = getphi(params, idx_18, quadrature_points)
     # print("a", a)
     b = getddphi(params, idx_18)
@@ -818,20 +819,21 @@ if __name__ == "__main__":
     e3, e2 = getexp(params)
     # print("e3", e3, "e2", e2)
 
-
-    idx_19 = Indices(getindizes(params))
-
-    #M_bar = getMbar_Aufgabe19(params, idx_19, quadrature_points)
-    #S_bar = getSbar_Aufgabe19(params, idx_19, quadrature_points)
-    #q_bar = getqbar_Aufgabe19(params, idx_19, quadrature_points)
-   
+    '''
+    Aufgabe 19
+    '''
     
+    idx_19 = Indices(getindizes(params))
+    
+    M_bar19 = getMbar_Aufgabe19(params, idx_19, quadrature_points)
+    S_bar19 = getSbar_Aufgabe19(params, idx_19, quadrature_points)
+    q_bar19 = getqbar_Aufgabe19(params, idx_19, quadrature_points)
     
     '''
     Aufgabe 20
     '''
     
-    def getplot_Aufgabe20(parameters, indexes):
+    def getAl(parameters, indexes):
         # h values 
         h_2D = geth(parameters)[1]
         exp = getexp(parameters)[1]  # 0 = 3D, 1 = 2D
@@ -869,6 +871,5 @@ if __name__ == "__main__":
     
         return A
     
-    test = getplot_Aufgabe20(params, idx_19) 
-    print(test.toarray())
-    
+    Al = getAl(params, idx_19) 
+    print(Al.toarray())

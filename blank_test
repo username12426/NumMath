@@ -1,0 +1,20 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jul 15 20:02:40 2024
+
+@author: Fischbach, Stefanski, Breda, Erhard
+"""
+
+import numpy as np
+import scipy.sparse
+from scipy.sparse import coo_matrix
+import matplotlib.pyplot as plt
+from scipy.sparse.linalg import spsolve
+import matplotlib.animation as animation
+from matplotlib.animation import FuncAnimation, PillowWriter
+
+'''
+Aufgabe 1, Initialisierung
+'''
+
+

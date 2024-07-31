@@ -317,7 +317,7 @@ def getplot(a_p_animation, parameters):
     ani.save("balkenbiegung_ani.gif", writer=PillowWriter(fps=10))
 
     # Optional: Show the animation
-    # plt.show()
+    plt.show()
     plt.close()
 
 
@@ -479,8 +479,8 @@ def getTinv(parameters):
 
 # e)
 def getexp(parameters):
-    i = np.arange(parameters.n + 1)
-    j = np.arange(parameters.n + 1)
+    i = np.arange(4)
+    j = np.arange(4)
     J, I = np.meshgrid(j, i)
     delta_i_1 = (I == 1).astype(int)
     delta_i_3 = (I == 3).astype(int)
@@ -1034,6 +1034,3 @@ if __name__ == "__main__":
     a_p_animation_high_res = np.array([Al.dot(solution[:2 * params.n + 2]) for solution in a_p_animation])
 
     getplot(a_p_animation_high_res, params)
-
-    plt.show()
-

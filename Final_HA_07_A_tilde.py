@@ -464,7 +464,7 @@ def geth(parameters):
 def getTinv(parameters):
     quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1)
     # Berechnet die Knotenpositionen
-    x_l = np.arange(0, parameters.l, parameters.l / parameters.n)
+    x_l = np.linspace(0, parameters.l, parameters.n)
     # Berechnet die Rücktransformation in 2D
     tinv_2D = np.outer(geth(parameters)[0], quadrature_points) + x_l[:, np.newaxis]
     # Erweiterung der Rücktransformation in 3D

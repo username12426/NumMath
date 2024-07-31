@@ -478,8 +478,8 @@ def getTinv(parameters):
 
 # e)
 def getexp(parameters):
-    i = np.arange(parameters.n + 1)
-    j = np.arange(parameters.n + 1)
+    i = np.arange(4)
+    j = np.arange(4)
     J, I = np.meshgrid(j, i)
     delta_i_1 = (I == 1).astype(int)
     delta_i_3 = (I == 3).astype(int)

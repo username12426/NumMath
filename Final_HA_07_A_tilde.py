@@ -327,7 +327,8 @@ Aufgabe 13
 # calculate matrix A
 def getA(parameters: object, indexes: object):
     h = 1  # The A-Matrix is onyl equal to the M matrix when h = 1
-    faktor = parameters.my(x) * h / 420  # define factor
+    my = 1
+    faktor = my * h / 420  # define factor
     matrix = np.array(
         [[156, 22 * h, 54, -13 * h], [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2], [54, 13 * h, 156, -22 * h],
          [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])  # define matrix

@@ -274,7 +274,6 @@ def newmark_simmulation(parameters, static_solution):
                 0.5 * S * a_p[:2 * parameters.n + 2] - v_q - C @ loads_v - v_n).T @ a_p[:2 * parameters.n + 2]
         total_energy_timesteps[time_step] = total_energy[0].toarray().item()
 
-    getplot(a_p_animation, parameters)
     return a_p_animation, total_energy_timesteps
 
 
@@ -317,7 +316,7 @@ def getplot(a_p_animation, parameters):
 
     # Optional: Show the animation
     # plt.show()
-    plt.cla()
+    plt.close()
 
 
 '''
@@ -676,7 +675,7 @@ if __name__ == "__main__":
     C = getC(params)
 
     a_p_animation, total_energy_newmark = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
-    newmark_simmulation(params, alpha_e_static_solution_n3_arr)
+    getplot(a_p_animation, params)
 
     '''
     Aufgabe 13
@@ -870,4 +869,24 @@ if __name__ == "__main__":
 
 
     Al = getAl(params, idx_19)
-    print(Al.toarray())
+
+    '''
+    w = Al.dot(solution_vector[:2 * parameters.n + 2])
+    print(f'W Shape: {w.shape}')
+    print(f'w (for h = 0):')
+    print(w[:5])
+    print(f'w (for h = 0.3):')
+    print(w[5:10])
+    print(f'w (for h = 0.6):')
+    print(w[10:])
+
+    insert_positions = np.arange(parameters.nh, parameters.nh * n, parameters.nh)
+    insert_positions += np.arange(len(insert_positions))
+    print(insert_positions)
+
+    # insert_values = solution_vector[:2 * parameters.n + 2, 2][1:-1]
+    print('solution:')
+    print(solution_vector[:2 * parameters.n + 2, 2])
+    print('Cropped Solutions:')
+    # print(insert_values)
+    '''

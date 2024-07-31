@@ -5,7 +5,6 @@ Created on Tue Jul 30 10:08:09 2024
 @author: carol
 """
 
-
 import numpy as np
 import scipy.sparse
 from scipy.sparse import coo_matrix
@@ -272,8 +271,8 @@ def newmark_simmulation(parameters, static_solution):
         loads_v = a_p[2 * parameters.n + 2:] * (-1)
 
         total_energy = 0.5 * a_d_p[:2 * parameters.n + 2].T @ M @ a_d_p[:2 * parameters.n + 2] + (
-                    0.5 * S * a_p[:2 * parameters.n + 2] - v_q - C @ loads_v - v_n).T @ a_p[:2 * parameters.n + 2]
-        total_energy_timesteps[time_step] = total_energy[0].toarray()
+                0.5 * S * a_p[:2 * parameters.n + 2] - v_q - C @ loads_v - v_n).T @ a_p[:2 * parameters.n + 2]
+        total_energy_timesteps[time_step] = total_energy[0].toarray().item()
 
     getplot(a_p_animation, parameters)
     return a_p_animation, total_energy_timesteps
@@ -342,12 +341,12 @@ def getA(parameters: object, indexes: object):
 # calculate the analytic solution for the given problem
 def analytical_w(parameters, x_k):
     return (parameters.q(x) / (parameters.E(x) * parameters.I(x))) * (
-                (x_k ** 4) / 24 - (parameters.l * x_k ** 3) / 6 + ((parameters.l ** 2) * (x_k ** 2)) / 4)
+            (x_k ** 4) / 24 - (parameters.l * x_k ** 3) / 6 + ((parameters.l ** 2) * (x_k ** 2)) / 4)
 
 
 def analytical_w_prime(parameters, x_k):
     return (parameters.q(x) / (parameters.E(x) * parameters.I(x))) * (
-                (x_k ** 3) / 6 - (parameters.l * x_k ** 2) / 2 + (parameters.l ** 2 * x_k) / 2)
+            (x_k ** 3) / 6 - (parameters.l * x_k ** 2) / 2 + (parameters.l ** 2 * x_k) / 2)
 
 
 '''
@@ -385,7 +384,7 @@ Aufgabe 17, 18
 def getphi(parameters, indexes, quadrature_points):
     # x = quadrature points = Stützstellen
     # create Vektor of suoporting points
-    #quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1)
+    # quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1)
 
     # initialisiere leere matrix
     phi_i_lijk = np.zeros((parameters.n, 4, 4, len(quadrature_points)))
@@ -414,9 +413,9 @@ def getphi(parameters, indexes, quadrature_points):
     phi_j_lijk[indexes.matj == 2] = phi_2(quadrature_points)
     phi_j_lijk[indexes.matj == 3] = phi_3(quadrature_points)
 
-    phi = np.array([phi_0(quadrature_points), phi_1(quadrature_points), phi_2(quadrature_points), phi_3(quadrature_points)])
+    phi = np.array(
+        [phi_0(quadrature_points), phi_1(quadrature_points), phi_2(quadrature_points), phi_3(quadrature_points)])
 
-    
     return phi_i_lijk, phi_j_lijk, phi_i_lik, phi
 
 
@@ -501,7 +500,6 @@ Aufgabe 19
 
 
 def getMbar_Aufgabe19(parameters, indexes, quadrature_points):
-
     h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
     exp = getexp(parameters)[0] + 1
     factors = np.power(h_3d, exp)
@@ -517,7 +515,6 @@ def getMbar_Aufgabe19(parameters, indexes, quadrature_points):
 
 
 def getSbar_Aufgabe19(parameters, indexes, quadrature_points):
-
     h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
     exp = getexp(parameters)[0] - 3
     factors = np.power(h_3d, exp)
@@ -536,7 +533,6 @@ def getSbar_Aufgabe19(parameters, indexes, quadrature_points):
 
 
 def getqbar_Aufgabe19(parameters, indexes, quadrature_points):
-
     h_2D = geth(parameters)[1]
     exp = getexp(parameters)[1] + 1  # 0 = 3D, 1 = 2D
     factors = np.power(h_2D, exp)
@@ -730,7 +726,7 @@ if __name__ == "__main__":
     ax[0].plot(np.arange(n_error_test), error_rates_plot)
     ax[0].set_xlabel("n in 1")
     ax[0].set_ylabel("error_L^2 in 1")
-    ax[1].plot(np.log(np.arange(n_error_test)), np.log(error_rates_plot))
+    ax[1].plot(np.log(np.arange(n_error_test) + 1), np.log(error_rates_plot))
     ax[1].set_xlabel('log(n) in 1')
     ax[1].set_ylabel("log(error_L^2) in 1")
 
@@ -799,7 +795,7 @@ if __name__ == "__main__":
     params.set_n(3)
     params.ns = 3
     stencil = getstencil(params)
-   #  print("stencil", stencil)
+    #  print("stencil", stencil)
 
     '''
     Aufgabe 17, 18
@@ -822,54 +818,56 @@ if __name__ == "__main__":
     '''
     Aufgabe 19
     '''
-    
+
     idx_19 = Indices(getindizes(params))
-    
+
     M_bar19 = getMbar_Aufgabe19(params, idx_19, quadrature_points)
     S_bar19 = getSbar_Aufgabe19(params, idx_19, quadrature_points)
     q_bar19 = getqbar_Aufgabe19(params, idx_19, quadrature_points)
-    
+
     '''
     Aufgabe 20
     '''
-    
+
+
     def getAl(parameters, indexes):
-        # h values 
+        # h values
         h_2D = geth(parameters)[1]
         exp = getexp(parameters)[1]  # 0 = 3D, 1 = 2D
-    
+
         factors = np.power(h_2D, exp)[0]
-    
-        # equidistant points x_k 
+
+        # equidistant points x_k
         k = np.arange(0, parameters.nh + 1)
         x_k = k / parameters.nh
-    
+
         # get A-matrix
         A_elements = getphi(parameters, indexes, x_k)[3].T * factors
         A_elements = np.tile(A_elements, (parameters.n, 1, 1))
-    
-        # Generate indices 
-        J, K = np.meshgrid(np.arange(4), k)  
-    
+
+        # Generate indices
+        J, K = np.meshgrid(np.arange(4), k)
+
         # Tile the index arrays to match the number of elements
         J_indices = np.tile(J, (parameters.n, 1, 1))
         K_indices = np.tile(K, (parameters.n, 1, 1))
         L = np.arange(parameters.n).reshape(parameters.n, 1, 1) * np.ones((1, parameters.nh + 1, 4)).astype(int)
-    
-        # get K_indices 
+
+        # get K_indices
         K_indices = (parameters.nh * L + K_indices).astype(int)
-    
+
         # get J_indices
         J_indices = (2 * L + J_indices).astype(int)
-    
+
         # Filter out duplicate assignments to avoid summing them in the COO matrix
         mask = np.zeros_like(A_elements.flatten(), dtype=bool)
         mask[np.unique(K_indices.flatten() * A_elements.shape[1] + J_indices.flatten(), return_index=True)[1]] = True
-    
-        # Assemble sparse matrix A 
+
+        # Assemble sparse matrix A
         A = coo_matrix((A_elements.flatten()[mask], (K_indices.flatten()[mask], J_indices.flatten()[mask]))).tocsr()
-    
+
         return A
-    
-    Al = getAl(params, idx_19) 
+
+
+    Al = getAl(params, idx_19)
     print(Al.toarray())

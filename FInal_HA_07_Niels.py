@@ -50,86 +50,82 @@ def getindizes(parameters: object):
     return matl, mati, matj, matlli, matllj, vekl, veki, veklli
 
 
-'''
-Aufgabe 3,4; Elementmatrizen, -vektoren
-'''
+def getMbar(parameters, indexes):
+    h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
+    exp = getexp(parameters)[0] + 1
+    factors = np.power(h_3d, exp)
+
+    quadrature_points = np.linspace(0, params.l, params.ns + 1)
+
+    phi_arrays = getphi(parameters, indexes, quadrature_points)
+    vectorized_my = np.vectorize(parameters.my)
+    integrand = vectorized_my(getTinv(parameters)[1]) * phi_arrays[0] * phi_arrays[1]
+    integral = np.dot(integrand, getstencil(parameters))
+
+    m_element = integral * factors
+
+    return m_element
 
 
-# create Mass matrix
-def getMbar(parameters: object):
-    h = parameters.h
-    faktor = parameters.my(x) * h / 420  # define factor
-    matrix = np.array(
-        [[156, 22 * h, 54, -13 * h], [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2], [54, 13 * h, 156, -22 * h],
-         [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])  # define matrix
-    M = faktor * matrix  # scale matrix by the factor
-    M = np.tile(M, (parameters.n, 1, 1))  # Replicate the scaled matrix for each element
-    # Return the final 3D array
-    return M
+def getSbar(parameters, indexes):
+    h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
+    exp = getexp(parameters)[0] - 3
+    factors = np.power(h_3d, exp)
+
+    ddphi_arrays = getddphi(parameters, indexes)
+    vectorized_E = np.vectorize(parameters.E)
+    vectorized_I = np.vectorize(parameters.E)
+    t_inv = getTinv(parameters)[1]  # 4D array
+
+    integrand = vectorized_E(t_inv) * vectorized_I(t_inv) * ddphi_arrays[0] * ddphi_arrays[1]
+    integral = np.dot(integrand, getstencil(parameters))  # axis 3 means sum along k dimension
+
+    s_element = integral * factors
+
+    return s_element
 
 
-# create Stiffness matrix S the same way as M in getMbar
-def getSbar(parameters: object):
-    h = parameters.h
-    faktor = parameters.E(x) * parameters.I(x) / h ** 3
-    matrix = np.array([[12, 6 * h, -12, 6 * h], [6 * h, 4 * h ** 2, -6 * h, 2 * h ** 2], [-12, -6 * h, 12, -6 * h],
-                       [6 * h, 2 * h ** 2, -6 * h, 4 * h ** 2]])
-    S = faktor * matrix
-    S = np.tile(S, (parameters.n, 1, 1))
-    return S
+def getqbar(parameters, indexes):
+    h_2D = geth(parameters)[1]
+    exp = getexp(parameters)[1] + 1  # 0 = 3D, 1 = 2D
+    factors = np.power(h_2D, exp)
+
+    quadrature_points = np.linspace(0, params.l, params.ns + 1)
+
+    phi_arrays = getphi(parameters, indexes, quadrature_points)
+    vectorized_q = np.vectorize(parameters.q)
+    t_inv = getTinv(parameters)[0]
+
+    integrand = vectorized_q(t_inv) * phi_arrays[2]
+    integral = np.dot(integrand, getstencil(parameters))
+
+    q_element = factors * integral
+
+    return q_element
 
 
-# create element vector vekq the same way as M in getMbar
-def getqbar(parameters: object):
-    h = parameters.h
-    faktor = parameters.q(x) * h / 12
-    vektor = np.array([[6], [h], [6], [-h]])
-    vekq = faktor * vektor
-    vekq = np.tile(vekq, (parameters.n, 1, 1))
-    return vekq
-
-
-'''
-Aufgabe 5, Massen-, Steifigkeitsmatrix, Streckenlastvektor
-'''
-
-
-# Mass matrix
-def getM(parameters: object, indexes: object):
-    M_alt = getMbar(parameters)  # Define the data matrix
-    M_neu = coo_matrix((M_alt.flatten(), (indexes.matlli.flatten(), indexes.matllj.flatten()))).tocsr()
-    return M_neu
-
-
-# Stiffness matrix
-# Analogous to getM for the data of the stiffness matrix
 def getS(parameters, indexes):
-    S_alt = getSbar(parameters)
+    S_alt = getSbar(parameters, indexes)
     S_neu = coo_matrix((S_alt.flatten(), (indexes.matlli.flatten(),
                                           indexes.matllj.flatten()))).tocsr()  # Convert the data matrix to a sparse matrix in COO format and then to CSR format
     return S_neu
 
 
+# Mass matrix
+def getM(parameters, indexes):
+    M_alt = getMbar(parameters, indexes)  # Define the data matrix
+    M_neu = coo_matrix((M_alt.flatten(), (indexes.matlli.flatten(), indexes.matllj.flatten()))).tocsr()
+    return M_neu
 
 
-# element vector
-# Analogous to getM for the values of the element vector
 def getvq(parameters, indexes):
-    vq_alt = getqbar(parameters)
-    vq_neu = coo_matrix((vq_alt.flatten(), (indexes.veklli.flatten(), np.zeros_like(indexes.veklli.flatten())))).tocsr()
-    # np.zeros_like(veklli.flatten()) creates an array of zeros with the same shape as veklli.flatten()
+    vq_alt = getqbar(parameters, indexes)
+    vq_neu = coo_matrix(
+        (vq_alt.flatten(), (indexes.veklli.flatten(), np.zeros_like(indexes.veklli.flatten())))).tocsr()
     return vq_neu
 
 
-'''
-Aufgabe 6
-'''
-
-
-# Sind und nicht ganz sicher ob wir "==" verwenden dürfen, deshalb gubt es zwei Varianten
-# B is not getting passed into the function, so we have to be careful when we redefine the B matrix!!
-
-def getC(parameters):
+def getC(parameters:object):
     E1_indices = parameters.B[parameters.B[:, 1] == 1, 0]
     E2_indices = parameters.B[parameters.B[:, 1] == 2, 0]
 
@@ -143,14 +139,6 @@ def getC(parameters):
 
     return C1
 
-
-'''
-Aufgabe 7
-'''
-
-
-# Variante 1. Das ist wieder die Variante mit dem ==, man kann das aber genau so auch alternativ ohne machen
-# The B matrix has to be updated to the current n before you use this function
 
 def getvn(parameters):
     E3_indices = parameters.B[parameters.B[:, 1] == 3, 0]  # get all elements for K3, and extract the indices
@@ -175,11 +163,6 @@ def getvn(parameters):
     return v_N
 
 
-'''
-Aufgabe 8
-'''
-
-
 def getvd(parameters):
     a_k_values = parameters.B[parameters.B[:, 1] == 1, 2]
     b_k_values = parameters.B[parameters.B[:, 1] == 2, 2]
@@ -191,12 +174,6 @@ def getvd(parameters):
     v_D = coo_matrix((v_D_values, (v_D_rows, v_D_cols))).tocsr()
 
     return v_D
-
-
-'''
-Aufgabe 9
-'''
-
 
 def getMe(parameters, indexes):
     M = getM(parameters, indexes)
@@ -227,10 +204,6 @@ def getve(parameters, indexes):
     return v_E
 
 
-'''
-Aufgabe 12, 14
-'''
-
 
 def newmark_simmulation(parameters, static_solution):
     beta = parameters.beta
@@ -252,6 +225,8 @@ def newmark_simmulation(parameters, static_solution):
     # prepare an empty matrix for coming animation data
     a_p_animation = np.zeros((parameters.n_p, 2 * parameters.n + 2))  # Data Matrix for the Animation
     total_energy_timesteps = np.zeros(parameters.n_p)  # Task 14, prepare vector
+
+    print(f'Number of elements: {2 * parameters.n + 2}')
 
     # Iterate over n_p timesteps using the Newmark-Algorithm
     for time_step in range(parameters.n_p):
@@ -329,7 +304,8 @@ Aufgabe 13
 # calculate matrix A
 def getA(parameters: object, indexes: object):
     h = 1  # The A-Matrix is onyl equal to the M matrix when h = 1
-    faktor = parameters.my(x) * h / 420  # define factor
+    my = 1
+    faktor = my * h / 420  # define factor
     matrix = np.array(
         [[156, 22 * h, 54, -13 * h], [22 * h, 4 * h ** 2, 13 * h, -3 * h ** 2], [54, 13 * h, 156, -22 * h],
          [-13 * h, -3 * h ** 2, -22 * h, 4 * h ** 2]])  # define matrix
@@ -465,8 +441,9 @@ def geth(parameters):
 def getTinv(parameters):
     quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1)
     # Berechnet die Knotenpositionen
-    x_l = np.arange(0, parameters.l, parameters.l / parameters.n)
+    x_l = np.linspace(0, parameters.l, parameters.n)
     # Berechnet die Rücktransformation in 2D
+
     tinv_2D = np.outer(geth(parameters)[0], quadrature_points) + x_l[:, np.newaxis]
     # Erweiterung der Rücktransformation in 3D
     tinv_3D = tinv_2D[:, np.newaxis, :]
@@ -494,64 +471,6 @@ def getexp(parameters):
     return exp_3d, exp_2d
 
 
-'''
-Aufgabe 19
-'''
-
-
-def getMbar_Aufgabe19(parameters, indexes):
-    h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
-    exp = getexp(parameters)[0] + 1
-    factors = np.power(h_3d, exp)
-
-    quadrature_points = np.linspace(0, params.l, params.ns + 1)
-
-    phi_arrays = getphi(parameters, indexes, quadrature_points)
-    vectorized_my = np.vectorize(parameters.my)
-    integrand = vectorized_my(getTinv(parameters)[1]) * phi_arrays[0] * phi_arrays[1]
-    integral = np.dot(integrand, getstencil(parameters))
-
-    m_element = integral * factors
-
-    return m_element
-
-
-def getSbar_Aufgabe19(parameters, indexes):
-    h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
-    exp = getexp(parameters)[0] - 3
-    factors = np.power(h_3d, exp)
-
-    ddphi_arrays = getddphi(parameters, indexes)
-    vectorized_E = np.vectorize(parameters.E)
-    vectorized_I = np.vectorize(parameters.E)
-    t_inv = getTinv(parameters)[1]  # 4D array
-
-    integrand = vectorized_E(t_inv) * vectorized_I(t_inv) * ddphi_arrays[0] * ddphi_arrays[1]
-    integral = np.dot(integrand, getstencil(parameters))  # axis 3 means sum along k dimension
-
-    s_element = integral * factors
-
-    return s_element
-
-
-def getqbar_Aufgabe19(parameters, indexes):
-    h_2D = geth(parameters)[1]
-    exp = getexp(parameters)[1] + 1  # 0 = 3D, 1 = 2D
-    factors = np.power(h_2D, exp)
-
-    quadrature_points = np.linspace(0, params.l, params.ns + 1)
-
-    phi_arrays = getphi(parameters, indexes, quadrature_points)
-    vectorized_q = np.vectorize(parameters.q)
-    t_inv = getTinv(parameters)[0]
-
-    integrand = vectorized_q(t_inv) * phi_arrays[2]
-    integral = np.dot(integrand, getstencil(parameters))
-
-    q_element = factors * integral
-
-    return q_element
-
 
 if __name__ == "__main__":
 
@@ -571,10 +490,10 @@ if __name__ == "__main__":
     '''
     Aufgabe 15
     '''
-    my = lambda x: x_0  # Längenspezifische Masse in kg/m
-    E = lambda x: x_0  # Elastizitätsmodul in N/m^2
-    I = lambda x: x_0  # Flächenträgheitsmoment in m^4
-    q = lambda x: x_0  # Streckenlast in N/m
+    my = lambda x_: x_**2  # Längenspezifische Masse in kg/m
+    E = lambda x_: x_ * 2 + 1 # Elastizitätsmodul in N/m^2
+    I = lambda x_: x_ * 2 + 1  # Flächenträgheitsmoment in m^4
+    q = lambda x_: x_**2 # Streckenlast in N/m
 
     '''
     B = np.array([[0, 1, 0],  # Auslenkung linkes Ende in m
@@ -632,11 +551,12 @@ if __name__ == "__main__":
     Aufgabe 10
     '''
 
-    params.set_n(3)
+    params.set_n(1)
+    n_plot_1 = params.n
     idx_10 = Indices(getindizes(params))
     alpha_e_static_solution_n3_arr = scipy.sparse.linalg.spsolve(getSe(params, idx_10),
                                                                  getve(params, idx_10))  # Find the static solution
-    # alpha_e_static_solution_n3
+
 
 
     '''
@@ -650,10 +570,10 @@ if __name__ == "__main__":
 
     # Plot both solutions
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 4), sharey='row')
-    ax[0].plot(np.linspace(0, params.l, n + 1), alpha_e_static_solution_n3_arr[:2 * 3 + 2:2])
+    ax[0].plot(np.linspace(0, params.l, n_plot_1 + 1), alpha_e_static_solution_n3_arr[:2 * n_plot_1 + 2:2])
     ax[0].set_xlabel("x in m")
     ax[0].set_ylabel("w in m")
-    ax[0].set_title("Solution for n = 3")
+    ax[0].set_title(f"Solution for n = {n_plot_1}")
     ax[0].set_xlim(0, 1)
     ax[0].set_ylim(-0.15, 0.15)
 
@@ -663,14 +583,14 @@ if __name__ == "__main__":
     ax[1].set_xlabel("x in m")
     ax[1].set_xlim(0, 1)
     ax[1].set_ylim(-0.15, 0.15)
+    plt.show()
     plt.close()
-   #  plt.show()
 
     '''
     Aufgabe 12
     '''
 
-    params.set_n(3)
+    params.set_n(1)
     params.set_q(0)
     idx_12 = Indices(getindizes(params))
 
@@ -744,7 +664,7 @@ if __name__ == "__main__":
     Aufgabe 14
     '''
     # calculate values
-    params.set_n(3)
+    params.set_n(1)
     t = np.linspace(0, 100, params.n_p)
     # a)
     total_energy_a = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
@@ -800,7 +720,7 @@ if __name__ == "__main__":
     Aufgabe 16
     '''
     # test für ns = 3
-    params.set_n(3)
+    params.set_n(1)
     params.ns = 3
     stencil = getstencil(params)
     #  print("stencil", stencil)
@@ -808,7 +728,7 @@ if __name__ == "__main__":
     '''
     Aufgabe 17, 18
     '''
-    params.set_n(3)
+    params.set_n(1)
     params.ns = 7
     idx_18 = Indices(getindizes(params))
     quadrature_points = np.linspace(0, params.l, params.ns + 1)
@@ -829,152 +749,10 @@ if __name__ == "__main__":
 
     idx_19 = Indices(getindizes(params))
 
-    M_bar19 = getMbar_Aufgabe19(params, idx_19)
+    M_bar19 = getMbar(params, idx_19)
     print(f'Mbar Shape: {M_bar19.shape}')
-    S_bar19 = getSbar_Aufgabe19(params, idx_19)
-    q_bar19 = getqbar_Aufgabe19(params, idx_19)
-
-
-
-
-
-
-    '''
-    Test for Task 19
-    '''
-
-    def getS_19(parameters:object, indexes:object):
-        S_alt = getSbar_Aufgabe19(parameters, indexes)
-        S_neu = coo_matrix((S_alt.flatten(), (indexes.matlli.flatten(),
-                                              indexes.matllj.flatten()))).tocsr()  # Convert the data matrix to a sparse matrix in COO format and then to CSR format
-        return S_neu
-
-
-    # Mass matrix
-    def getM_19(parameters: object, indexes: object):
-        M_alt = getMbar_Aufgabe19(parameters, indexes)  # Define the data matrix
-        M_neu = coo_matrix((M_alt.flatten(), (indexes.matlli.flatten(), indexes.matllj.flatten()))).tocsr()
-        return M_neu
-
-
-
-    # element vector
-    # Analogous to getM for the values of the element vector
-    def getvq_19(parameters:object, indexes:object):
-        vq_alt = getqbar_Aufgabe19(parameters, indexes)
-        vq_neu = coo_matrix(
-            (vq_alt.flatten(), (indexes.veklli.flatten(), np.zeros_like(indexes.veklli.flatten())))).tocsr()
-        # np.zeros_like(veklli.flatten()) creates an array of zeros with the same shape as veklli.flatten()
-        return vq_neu
-
-
-    # Sind und nicht ganz sicher ob wir "==" verwenden dürfen, deshalb gubt es zwei Varianten
-    # B is not getting passed into the function, so we have to be careful when we redefine the B matrix!!
-
-    def getC_19(parameters:object):
-        E1_indices = parameters.B[parameters.B[:, 1] == 1, 0]
-        E2_indices = parameters.B[parameters.B[:, 1] == 2, 0]
-
-        C1_indices = np.concatenate((E1_indices * 2, E2_indices * 2 + 1))
-
-        assert max(C1_indices) <= parameters.n, "Update the B matrix for current n"  # This does not catch all errors!
-
-        num_entries = len(C1_indices)
-        C1 = coo_matrix((np.ones(num_entries), (C1_indices, np.arange(num_entries))),
-                        shape=(2 * parameters.n + 2, num_entries)).tocsr()
-
-        return C1
-
-
-    def getvn_19(parameters):
-        E3_indices = parameters.B[parameters.B[:, 1] == 3, 0]  # get all elements for K3, and extract the indices
-        E4_indices = parameters.B[parameters.B[:, 1] == 4, 0]
-
-        c_3 = parameters.B[parameters.B[:, 1] == 3, 2]  # get all elementd for K3 and extract the values to the indices
-        c_4 = parameters.B[parameters.B[:, 1] == 4, 2]
-
-        c_3_values = np.ones(len(E3_indices)) * c_3.T
-        c_4_values = np.ones(len(E4_indices)) * c_4.T
-
-        v_N_rows = np.concatenate((E3_indices, E4_indices)).astype(int)
-
-        assert max(v_N_rows) <= parameters.n, "Update the B matrix for current n"  # check for update errors
-
-        v_N_cols = np.zeros(len(v_N_rows)).astype(int)
-        v_N_vals = np.concatenate((c_3_values, c_4_values))
-        v_N_shape = (2 * parameters.n + 2, 1)
-
-        v_N = coo_matrix((v_N_vals, (v_N_rows, v_N_cols)), v_N_shape).tocsr()
-
-        return v_N
-
-
-    '''
-    Aufgabe 8
-    '''
-
-
-    def getvd_19(parameters):
-        a_k_values = parameters.B[parameters.B[:, 1] == 1, 2]
-        b_k_values = parameters.B[parameters.B[:, 1] == 2, 2]
-
-        v_D_values = np.concatenate((a_k_values, b_k_values)).astype(int)
-        v_D_rows = np.arange(len(v_D_values)).astype(int)
-        v_D_cols = np.zeros(len(v_D_values)).astype(int)
-
-        v_D = coo_matrix((v_D_values, (v_D_rows, v_D_cols))).tocsr()
-
-        return v_D
-
-
-    '''
-    Aufgabe 9
-    '''
-
-
-    def getMe_19(parameters, indexes):
-        M = getM_19(parameters, indexes)
-        C = getC_19(parameters)
-        C0 = np.zeros_like(C.toarray())
-        zero_filler = scipy.sparse.csr_matrix(np.zeros((C0.shape[1], C0.shape[1])))
-        M_C0_horizontal_stack = scipy.sparse.hstack([M, C0])
-        filler_C0_horizontal_stack = scipy.sparse.hstack([C0.T, zero_filler])
-
-        Me = scipy.sparse.vstack([M_C0_horizontal_stack, filler_C0_horizontal_stack])
-        return Me
-
-
-    def getSe_19(parameters, indexes):
-        S = getS_19(parameters, indexes)
-        C = getC_19(parameters)
-        zero_filler = scipy.sparse.csr_matrix(np.zeros((C.toarray().shape[1], C.toarray().shape[1])))
-
-        S_C_horizontal_stack = scipy.sparse.hstack([S, C])
-        C_filler_horizontal_stack = scipy.sparse.hstack([C.T, zero_filler])
-        Se = scipy.sparse.vstack([S_C_horizontal_stack, C_filler_horizontal_stack]).tocsr()
-        return Se
-
-
-    def getve_19(parameters, indexes):
-        vq_nq = getvq_19(parameters, indexes)
-        v_E = scipy.sparse.vstack([vq_nq, getvd(parameters)])
-        return v_E
-
-
-    params.set_n(3)
-    idx_10 = Indices(getindizes(params))
-    alpha_e_static_solution_complex = scipy.sparse.linalg.spsolve(getSe_19(params, idx_10),
-                                                                 getve_19(params, idx_10))  # Find the static solution
-
-
-    print(alpha_static_solution)
-
-    '''
-    Test End
-    '''
-
-
-
+    S_bar19 = getSbar(params, idx_19)
+    q_bar19 = getqbar(params, idx_19)
 
 
 
@@ -1034,3 +812,5 @@ if __name__ == "__main__":
     a_p_animation_high_res = np.array([Al.dot(solution[:2 * params.n + 2]) for solution in a_p_animation])
 
     getplot(a_p_animation_high_res, params)
+
+    plt.show()

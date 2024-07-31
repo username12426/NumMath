@@ -285,7 +285,7 @@ def getplot(a_p_animation, parameters):
     num_time_steps = data.shape[0]
 
     # Create the X-axis (positions of the supports)
-    x_data = np.linspace(0, parameters.l, n + 1)
+    x_data = np.linspace(0, parameters.l, len(a_p_animation[0]))
 
     # Initialize the figure and axes
     fig, ax = plt.subplots()
@@ -304,7 +304,7 @@ def getplot(a_p_animation, parameters):
     # Update function for each frame of the animation
     def update(frame):
         y_data = a_p_animation[frame,
-                 :2 * n + 2:2]  # y_data = a_p_animation[frame]  # Only plot the deviations, not the forces of the alpha vector
+                 :]  # y_data = a_p_animation[frame]  # Only plot the deviations, not the forces of the alpha vector
         line.set_data(x_data, y_data)
         return line,
 
@@ -315,7 +315,7 @@ def getplot(a_p_animation, parameters):
     ani.save("balkenbiegung_ani.gif", writer=PillowWriter(fps=10))
 
     # Optional: Show the animation
-    # plt.show()
+    plt.show()
     plt.close()
 
 
@@ -677,7 +677,7 @@ if __name__ == "__main__":
     C = getC(params)
 
     a_p_animation, total_energy_newmark = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
-    getplot(a_p_animation, params)
+    getplot(a_p_animation[:, : 2*params.n + 2:2], params)
 
     '''
     Aufgabe 13
@@ -877,6 +877,8 @@ if __name__ == "__main__":
 
     w = Al.dot(test_solution[:2 * params.n + 2])
 
-    plt.plot(np.linspace(0, params.l, len(w)), w)
+    a_p_animation_high_res = np.array([Al.dot(solution[:2 * params.n + 2]) for solution in a_p_animation])
+
+    getplot(a_p_animation_high_res, params)
 
     plt.show()

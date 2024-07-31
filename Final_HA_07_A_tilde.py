@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from scipy.sparse.linalg import spsolve
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation, PillowWriter
-
+import time
 '''
 Aufgabe 1, Initialisierung
 '''
@@ -550,6 +550,8 @@ def getqbar_Aufgabe19(parameters, indexes, quadrature_points):
 
 if __name__ == "__main__":
 
+    time_start = time.time()
+
     n = 3  # Anzahl der Elemente in 1
     nh = 5  # Anzahl der zusätzlichen Auswertungspunkte je Element in 1
     ns = 7  # Ordnung der Quadratur in 1
@@ -654,8 +656,8 @@ if __name__ == "__main__":
     ax[1].set_xlabel("x in m")
     ax[1].set_xlim(0, 1)
     ax[1].set_ylim(-0.15, 0.15)
-
-    # plt.show()
+    plt.close()
+   #  plt.show()
 
     '''
     Aufgabe 12
@@ -728,7 +730,7 @@ if __name__ == "__main__":
     ax[1].plot(np.log(np.arange(n_error_test) + 1), np.log(error_rates_plot))
     ax[1].set_xlabel('log(n) in 1')
     ax[1].set_ylabel("log(error_L^2) in 1")
-
+    plt.close()
     # plt.show()
 
     '''
@@ -785,7 +787,7 @@ if __name__ == "__main__":
     # Zeige das Ergebnis an
     plt.tight_layout()
     # plt.show()
-    plt.cla()
+    plt.close()
 
     '''
     Aufgabe 16
@@ -870,23 +872,11 @@ if __name__ == "__main__":
 
     Al = getAl(params, idx_19)
 
-    '''
-    w = Al.dot(solution_vector[:2 * parameters.n + 2])
-    print(f'W Shape: {w.shape}')
-    print(f'w (for h = 0):')
-    print(w[:5])
-    print(f'w (for h = 0.3):')
-    print(w[5:10])
-    print(f'w (for h = 0.6):')
-    print(w[10:])
+    test_solution = alpha_e_static_solution_n3_arr
+    # !!!!!Later use a_p_animation!!!!!!!
 
-    insert_positions = np.arange(parameters.nh, parameters.nh * n, parameters.nh)
-    insert_positions += np.arange(len(insert_positions))
-    print(insert_positions)
+    w = Al.dot(test_solution[:2 * params.n + 2])
 
-    # insert_values = solution_vector[:2 * parameters.n + 2, 2][1:-1]
-    print('solution:')
-    print(solution_vector[:2 * parameters.n + 2, 2])
-    print('Cropped Solutions:')
-    # print(insert_values)
-    '''
+    plt.plot(np.linspace(0, params.l, len(w)), w)
+
+    plt.show()

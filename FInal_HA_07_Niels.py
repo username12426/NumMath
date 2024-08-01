@@ -1,27 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jul 30 10:08:09 2024
+Created on Thu Aug  1 12:39:23 2024
 
-@author: carol
+@author: fischbach, stefanski, breda, erhard
 """
+
 
 import numpy as np
 import scipy.sparse
 from scipy.sparse import coo_matrix
 import matplotlib.pyplot as plt
-from scipy.sparse.linalg import spsolve
-import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation, PillowWriter
 import time
-'''
-Aufgabe 1, Initialisierung
-'''
 
 '''
-Aufgabe 2, nützliche Arrays
+Create required functions
 '''
-
-
+'''
+Task 2, Indices
+'''
 # a) 3D-Arrays
 def getindizes(parameters: object):
     # a) 3D-Arrays
@@ -49,7 +46,9 @@ def getindizes(parameters: object):
     # Return the generated arrays
     return matl, mati, matj, matlli, matllj, vekl, veki, veklli
 
-
+'''
+Task 3, 4, 19, create M-, S-, q_bar
+'''
 def getMbar(parameters, indexes):
     h_3d = geth(parameters)[2]  # 0 = 1D, 1 = 2D, 2 = 3D
     exp = getexp(parameters)[0] + 1
@@ -103,77 +102,88 @@ def getqbar(parameters, indexes):
 
     return q_element
 
-
+'''
+Task 5, Create mass matrix, stiffness matrix and thickness load vector
+'''
+# stiffness matrix
 def getS(parameters, indexes):
-    S_alt = getSbar(parameters, indexes)
+    S_alt = getSbar(parameters, indexes) # Define the data matrix
     S_neu = coo_matrix((S_alt.flatten(), (indexes.matlli.flatten(),
                                           indexes.matllj.flatten()))).tocsr()  # Convert the data matrix to a sparse matrix in COO format and then to CSR format
     return S_neu
 
-
 # Mass matrix
 def getM(parameters, indexes):
-    M_alt = getMbar(parameters, indexes)  # Define the data matrix
+    M_alt = getMbar(parameters, indexes)  
     M_neu = coo_matrix((M_alt.flatten(), (indexes.matlli.flatten(), indexes.matllj.flatten()))).tocsr()
     return M_neu
 
-
+# thickness load vector
 def getvq(parameters, indexes):
     vq_alt = getqbar(parameters, indexes)
     vq_neu = coo_matrix(
         (vq_alt.flatten(), (indexes.veklli.flatten(), np.zeros_like(indexes.veklli.flatten())))).tocsr()
     return vq_neu
 
-
+'''
+Task 6
+'''
 def getC(parameters:object):
+    # Extract indices from matrix B
     E1_indices = parameters.B[parameters.B[:, 1] == 1, 0]
     E2_indices = parameters.B[parameters.B[:, 1] == 2, 0]
-
+    # Create C1_indices by concatenating two arrays:
     C1_indices = np.concatenate((E1_indices * 2, E2_indices * 2 + 1))
-
-    # assert max(C1_indices) < parameters.n, "Update the B matrix for current n"  # This does not catch all errors!
-
+    # Create a sparse matrix C1 using COO format, then convert to CSR format
     num_entries = len(C1_indices)
     C1 = coo_matrix((np.ones(num_entries), (C1_indices, np.arange(num_entries))),
                     shape=(2 * parameters.n + 2, num_entries)).tocsr()
 
     return C1
-
+'''
+Task 7
+'''
 
 def getvn(parameters):
+    # Extract indices, values from matrix B
     E3_indices = parameters.B[parameters.B[:, 1] == 3, 0]  # get all elements for K3, and extract the indices
     E4_indices = parameters.B[parameters.B[:, 1] == 4, 0]
 
     c_3 = parameters.B[parameters.B[:, 1] == 3, 2]  # get all elementd for K3 and extract the values to the indices
     c_4 = parameters.B[parameters.B[:, 1] == 4, 2]
-
+    # Create an array c3, c4
     c_3_values = np.ones(len(E3_indices)) * c_3.T
     c_4_values = np.ones(len(E4_indices)) * c_4.T
-
+    # Combine the row indices from E3 and E4 into a single array
     v_N_rows = np.concatenate((E3_indices, E4_indices)).astype(int)
-
-    # assert max(v_N_rows) < parameters.n, "Update the B matrix for current n"  # check for update errors
-
+    # Create a empty array of zeros with the same length as v_N_rows
     v_N_cols = np.zeros(len(v_N_rows)).astype(int)
+    # Combine the values from c_3_values and c_4_values into a single array
     v_N_vals = np.concatenate((c_3_values, c_4_values))
     v_N_shape = (2 * parameters.n + 2, 1)
-
+    # Create a sparse matrix v_N using COO format, then convert to CSR format
     v_N = coo_matrix((v_N_vals, (v_N_rows, v_N_cols)), v_N_shape).tocsr()
 
     return v_N
 
-
+'''
+Task 8
+'''
 def getvd(parameters):
+    # Extract values from the matrix B
     a_k_values = parameters.B[parameters.B[:, 1] == 1, 2]
     b_k_values = parameters.B[parameters.B[:, 1] == 2, 2]
-
+    # Concatenate the extracted values from a_k_values and b_k_values into a single array
     v_D_values = np.concatenate((a_k_values, b_k_values)).astype(int)
     v_D_rows = np.arange(len(v_D_values)).astype(int)
     v_D_cols = np.zeros(len(v_D_values)).astype(int)
-
+    # Create a sparse matrix v_D using COO format, then convert to CSR format
     v_D = coo_matrix((v_D_values, (v_D_rows, v_D_cols))).tocsr()
 
     return v_D
+'''
+Task 9
+'''
 
 def getMe(parameters, indexes):
     M = getM(parameters, indexes)
@@ -203,7 +213,9 @@ def getve(parameters, indexes):
     v_E = scipy.sparse.vstack([vq_nq, getvd(parameters)])
     return v_E
 
-
+'''
+Task 11, 14, Newmark, Energy
+'''
 
 def newmark_simmulation(parameters, static_solution):
     beta = parameters.beta
@@ -321,14 +333,14 @@ def analytical_w(parameters, x_k):
     return (parameters.q(x_k) / (parameters.E(x_k) * parameters.I(x_k))) * (
             (x_k ** 4) / 24 - (parameters.l * x_k ** 3) / 6 + ((parameters.l ** 2) * (x_k ** 2)) / 4)
 
-
+# derivation of analytic solution
 def analytical_w_prime(parameters, x_k):
     return (parameters.q(x_k) / (parameters.E(x_k) * parameters.I(x_k))) * (
             (x_k ** 3) / 6 - (parameters.l * x_k ** 2) / 2 + (parameters.l ** 2 * x_k) / 2)
 
 
 '''
-Aufgabe 16
+Aufgabe 16, stencil
 '''
 
 
@@ -360,21 +372,19 @@ Aufgabe 17, 18
 # a)
 
 def getphi(parameters, indexes, quadrature_points):
-    # x = quadrature points = Stützstellen
-    # create Vektor of suoporting points
-
-    # initialisiere leere matrix
+    # quadrature_points represents the support points
+    # Initialize empty arrays
     phi_i_lijk = np.zeros((parameters.n, 4, 4, len(quadrature_points)))
     phi_j_lijk = np.zeros((parameters.n, 4, 4, len(quadrature_points)))
     phi_i_lik = np.zeros((parameters.n, 4, len(quadrature_points)))
 
-    # initialisiere Formfunktionen
+    # Define the shape functions
     phi_0 = lambda x: 1 - 3 * x ** 2 + 2 * x ** 3
     phi_1 = lambda x: x - 2 * x ** 2 + x ** 3
     phi_2 = lambda x: 3 * x ** 2 - 2 * x ** 3
     phi_3 = lambda x: -x ** 2 + x ** 3
 
-    # Weist die Formfunktionen basierend auf den Indexwerten zu
+     # Assign shape functions based on the indexes
     phi_i_lik[indexes.veki == 0] = phi_0(quadrature_points)
     phi_i_lik[indexes.veki == 1] = phi_1(quadrature_points)
     phi_i_lik[indexes.veki == 2] = phi_2(quadrature_points)
@@ -389,7 +399,8 @@ def getphi(parameters, indexes, quadrature_points):
     phi_j_lijk[indexes.matj == 1] = phi_1(quadrature_points)
     phi_j_lijk[indexes.matj == 2] = phi_2(quadrature_points)
     phi_j_lijk[indexes.matj == 3] = phi_3(quadrature_points)
-
+    
+    # Create an array containing all the shape functions evaluated at the quadrature points
     phi = np.array(
         [phi_0(quadrature_points), phi_1(quadrature_points), phi_2(quadrature_points), phi_3(quadrature_points)])
 
@@ -401,17 +412,17 @@ def getddphi(parameters, indexes):
     # create Vektor of suoporting points
     quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1)
 
-    # initialisiere Formfunktionen
+    # Define the second derivatives of the shape functions
     ddphi_0 = lambda x: -6 + 12 * x
     ddphi_1 = lambda x: -4 + 6 * x
     ddphi_2 = lambda x: 6 - 12 * x
     ddphi_3 = lambda x: -2 + 6 * x
 
-    # Initialisiert leere Arrays für die zweiten Ableitungen der Formfunktionen
+    # Initialize empty arrays to store the second derivatives of the shape functions
     ddphi_i_lijk = np.zeros((parameters.n, 4, 4, parameters.ns + 1))
     ddphi_j_lijk = np.zeros((parameters.n, 4, 4, parameters.ns + 1))
 
-    # Weist die zweiten Ableitungen basierend auf den Indexwerten zu
+    # Assign the second derivatives based on the index values
     ddphi_i_lijk[indexes.mati == 0] = ddphi_0(quadrature_points)
     ddphi_i_lijk[indexes.mati == 1] = ddphi_1(quadrature_points)
     ddphi_i_lijk[indexes.mati == 2] = ddphi_2(quadrature_points)
@@ -427,12 +438,14 @@ def getddphi(parameters, indexes):
 
 # c)
 def geth(parameters):
-    # annahme abstände zwischen den Stützstellen sind konstant
+    # Assume that the distances between the support points (Stützstellen) are constant
+    # Calculate the constant factor (distance between points)
     faktor = parameters.l / parameters.n
+    # Create a 1D array (h_1D) where each element is equal to the calculated factor
     h_1D = np.ones(parameters.n) * faktor
-    # Erweiterung  in 2D
+    # Extend the 1D array into 2D
     h_2D = h_1D[:, np.newaxis]
-    # Erweiterung  in 3D
+    # Further extend the 2D array into 3D
     h_3D = h_2D[:, np.newaxis]
 
     return h_1D, h_2D, h_3D
@@ -440,23 +453,24 @@ def geth(parameters):
 
 # d)
 def getTinv(parameters):
+    # Create quadrature points
     quadrature_points = np.linspace(0, parameters.l, parameters.ns + 1)
-    # Berechnet die Knotenpositionen
+    # Calculate the node positions
     x_l = np.linspace(0, parameters.l, parameters.n)
-    # Berechnet die Rücktransformation in 2D
-
+    
+    # Calculate the 2D inverse transformation
     tinv_2D = np.outer(geth(parameters)[0], quadrature_points) + x_l[:, np.newaxis]
-    # Erweiterung der Rücktransformation in 3D
+    # Extend the 2D inverse transformation to 3D
     tinv_3D = tinv_2D[:, np.newaxis, :]
-    # Erweiterung der Rücktransformation in 4D
+    # Extend the 3D inverse transformation to 4D
     tinv_4D = tinv_2D[:, np.newaxis, np.newaxis, :]
 
-    # Gibt die berechneten Rücktransformationen in 3D und 4D zurück
     return tinv_3D, tinv_4D
 
 
 # e)
 def getexp(parameters):
+    # Create arrays for indices i and j
     i = np.arange(4)
     j = np.arange(4)
     J, I = np.meshgrid(j, i)
@@ -464,15 +478,61 @@ def getexp(parameters):
     delta_i_3 = (I == 3).astype(int)
     delta_j_1 = (J == 1).astype(int)
     delta_j_3 = (J == 3).astype(int)
-
+    # Create a 3D array by stacking the combination of indices
     exp_3d = np.stack([delta_i_1 + delta_i_3 + delta_j_1 + delta_j_3] * parameters.n, axis=0)
-
+    # same in 2D
     exp_2d = np.stack([delta_i_1[:, 0] + delta_i_3[:, 0]] * parameters.n, axis=0)
 
     return exp_3d, exp_2d
 
+'''
+Task 20
+'''
 
+def getAl(parameters, indexes):
+    # h values
+    h_2D = geth(parameters)[1]
+    exp = getexp(parameters)[1]  # 0 = 3D, 1 = 2D
 
+    factors = np.power(h_2D, exp)[0]
+
+    # equidistant points x_k
+    k = np.arange(0, parameters.nh + 1)
+
+    x_k = k / parameters.nh
+
+    # get A-matrix
+    A_elements = getphi(parameters, indexes, x_k)[3].T * factors
+    A_elements = np.tile(A_elements, (parameters.n, 1, 1))
+
+    # Generate indices
+    J, K = np.meshgrid(np.arange(4), k)
+
+    # Tile the index arrays to match the number of elements
+    J_indices = np.tile(J, (parameters.n, 1, 1))
+    K_indices = np.tile(K, (parameters.n, 1, 1))
+    L = np.arange(parameters.n).reshape(parameters.n, 1, 1) * np.ones((1, parameters.nh + 1, 4)).astype(int)
+
+    # get K_indices
+    K_indices = (parameters.nh * L + K_indices).astype(int)
+
+    # get J_indices
+    J_indices = (2 * L + J_indices).astype(int)
+
+    # Filter out duplicate assignments to avoid summing them in the COO matrix
+    mask = np.zeros_like(A_elements.flatten(), dtype=bool)
+    mask[np.unique(K_indices.flatten() * A_elements.shape[1] + J_indices.flatten(), return_index=True)[1]] = True
+
+    # Assemble sparse matrix A
+    A = coo_matrix((A_elements.flatten()[mask], (K_indices.flatten()[mask], J_indices.flatten()[mask]))).tocsr()
+
+    return A
+
+'''
+Executing the tasks
+
+Task 1, initialize parameters
+'''
 if __name__ == "__main__":
 
     time_start = time.time()
@@ -489,12 +549,12 @@ if __name__ == "__main__":
     x = 1  # Zufälliges x für die lamda Funktionen für Aufgabe 1 - 15
 
     '''
-    Aufgabe 15
+    Task 15
     '''
-    my = lambda x_: x_**2  # Längenspezifische Masse in kg/m
-    E = lambda x_: x_ * 2 + 1  # Elastizitätsmodul in N/m^2
-    I = lambda x_: x_ * 2 + 1   # Flächenträgheitsmoment in m^4
-    q = lambda x_: x_**2  # Streckenlast in N/m
+    my = lambda x_: x_0 # Längenspezifische Masse in kg/m
+    E = lambda x_:  x_0  # Elastizitätsmodul in N/m^2
+    I = lambda x_:  x_0   # Flächenträgheitsmoment in m^4
+    q = lambda x_:  x_0  # Streckenlast in N/m
 
 
     class Parameters:
@@ -540,16 +600,17 @@ if __name__ == "__main__":
     params = Parameters()
 
     '''
-    Aufgabe 10
+    Task 10
     '''
-
+    # set parameters
     params.set_n(1)
     n_beam = params.n
     idx_10 = Indices(getindizes(params))
+    # calculate static solution
     alpha_e_static_solution_n3_arr = scipy.sparse.linalg.spsolve(getSe(params, idx_10),
                                                                  getve(params, idx_10))  # Find the static solution
     '''
-    Aufgabe 11
+    Task 11
     '''
 
     # Build the maticies for the DGL n = 100
@@ -579,9 +640,8 @@ if __name__ == "__main__":
     params.set_n(n_beam)
 
     '''
-    Aufgabe 12
+    Task 12
     '''
-
     params.q = lambda x_: 0  # Set Loads to zero
     idx_12 = Indices(getindizes(params))
 
@@ -593,12 +653,13 @@ if __name__ == "__main__":
     v_q = getvq(params, idx_12)
     v_n = getvn(params)
     C = getC(params)
-
+    # calculate solution with newmark procedure
     a_p_animation, total_energy_newmark = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
+    # generate the plot
     getplot(a_p_animation[:, : 2*params.n + 2:2], params)
 
     '''
-    Aufgabe 13
+    Task 13
     '''
     # set parameters
     params.q = q    # set q back to a non constant function
@@ -636,8 +697,7 @@ if __name__ == "__main__":
 
     n_error_test = 1000
 
-    #     '''
-
+    # create plot
     fig, ax = plt.subplots(1, 2, figsize=(14, 4))
     fig.suptitle("Relative Error Rates over Varying number of Knots n")
     ax[0].plot(np.arange(n_error_test), error_rates_plot)
@@ -646,15 +706,16 @@ if __name__ == "__main__":
     ax[1].plot(np.log(np.arange(n_error_test) + 1), np.log(error_rates_plot))
     ax[1].set_xlabel('log(n) in 1')
     ax[1].set_ylabel("log(error_L^2) in 1")
+    plt.show()
     plt.close()
     # plt.show()
 
     params.set_n(n_beam)
 
     '''
-    Aufgabe 14
+    Task 14
     '''
-    # calculate values
+    # calculate values for different cases
     t = np.linspace(0, 100, params.n_p)
     # a)
     total_energy_a = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
@@ -701,75 +762,22 @@ if __name__ == "__main__":
     axs[1, 1].set_xlabel('t in s')
     axs[1, 1].set_ylabel('E_ges in J')
 
-    # Zeige das Ergebnis an
+    
     plt.tight_layout()
     plt.show()
     plt.close()
 
-    '''
-    Aufgabe 16
-    '''
 
     '''
-    Aufgabe 17, 18
+    Task 20
     '''
-
-    '''
-    Aufgabe 19
-    '''
-
-
-    '''
-    Aufgabe 20
-    '''
-
-
-    def getAl(parameters, indexes):
-        # h values
-        h_2D = geth(parameters)[1]
-        exp = getexp(parameters)[1]  # 0 = 3D, 1 = 2D
-
-        factors = np.power(h_2D, exp)[0]
-
-        # equidistant points x_k
-        k = np.arange(0, parameters.nh + 1)
-
-        x_k = k / parameters.nh
-
-        # get A-matrix
-        A_elements = getphi(parameters, indexes, x_k)[3].T * factors
-        A_elements = np.tile(A_elements, (parameters.n, 1, 1))
-
-        # Generate indices
-        J, K = np.meshgrid(np.arange(4), k)
-
-        # Tile the index arrays to match the number of elements
-        J_indices = np.tile(J, (parameters.n, 1, 1))
-        K_indices = np.tile(K, (parameters.n, 1, 1))
-        L = np.arange(parameters.n).reshape(parameters.n, 1, 1) * np.ones((1, parameters.nh + 1, 4)).astype(int)
-
-        # get K_indices
-        K_indices = (parameters.nh * L + K_indices).astype(int)
-
-        # get J_indices
-        J_indices = (2 * L + J_indices).astype(int)
-
-        # Filter out duplicate assignments to avoid summing them in the COO matrix
-        mask = np.zeros_like(A_elements.flatten(), dtype=bool)
-        mask[np.unique(K_indices.flatten() * A_elements.shape[1] + J_indices.flatten(), return_index=True)[1]] = True
-
-        # Assemble sparse matrix A
-        A = coo_matrix((A_elements.flatten()[mask], (K_indices.flatten()[mask], J_indices.flatten()[mask]))).tocsr()
-
-        return A
-
-
+    # get inndices
     idx_20 = Indices(getindizes(params))
-
+    # get element matrix A
     Al = getAl(params, idx_20)
-
+    # create animation values
     a_p_animation_high_res = np.array([Al.dot(solution[:2 * params.n + 2]) for solution in a_p_animation])
-
+    # create plot
     getplot(a_p_animation_high_res, params)
 
     plt.show()

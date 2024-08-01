@@ -5,7 +5,6 @@ Created on Thu Aug  1 12:39:23 2024
 @author: fischbach, stefanski, breda, erhard
 """
 
-
 import numpy as np
 import scipy.sparse
 from scipy.sparse import coo_matrix
@@ -222,7 +221,6 @@ def newmark_simmulation(parameters, static_solution):
     gamma = parameters.gamma
     eta = parameters.eta
 
-    # Initialize starting point
     # use the static state as our startingpoint for the Newmark-algorithim
 
     a_0_rows = np.arange(len(static_solution), dtype=int)
@@ -237,8 +235,6 @@ def newmark_simmulation(parameters, static_solution):
     # prepare an empty matrix for coming animation data
     a_p_animation = np.zeros((parameters.n_p, 2 * parameters.n + 2))  # Data Matrix for the Animation
     total_energy_timesteps = np.zeros(parameters.n_p)  # Task 14, prepare vector
-
-    print(f'Number of elements: {2 * parameters.n + 2}')
 
     # Iterate over n_p timesteps using the Newmark-Algorithm
     for time_step in range(parameters.n_p):

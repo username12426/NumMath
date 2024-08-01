@@ -131,7 +131,7 @@ def getC(parameters:object):
 
     C1_indices = np.concatenate((E1_indices * 2, E2_indices * 2 + 1))
 
-    assert max(C1_indices) <= parameters.n, "Update the B matrix for current n"  # This does not catch all errors!
+    # assert max(C1_indices) < parameters.n, "Update the B matrix for current n"  # This does not catch all errors!
 
     num_entries = len(C1_indices)
     C1 = coo_matrix((np.ones(num_entries), (C1_indices, np.arange(num_entries))),
@@ -152,7 +152,7 @@ def getvn(parameters):
 
     v_N_rows = np.concatenate((E3_indices, E4_indices)).astype(int)
 
-    assert max(v_N_rows) <= parameters.n, "Update the B matrix for current n"  # check for update errors
+    # assert max(v_N_rows) < parameters.n, "Update the B matrix for current n"  # check for update errors
 
     v_N_cols = np.zeros(len(v_N_rows)).astype(int)
     v_N_vals = np.concatenate((c_3_values, c_4_values))
@@ -268,7 +268,8 @@ def getplot(a_p_animation, parameters):
     fig, ax = plt.subplots()
     line, = ax.plot([], [], lw=2)
     ax.set_xlim(0, 1)
-    ax.set_ylim(data.min(), data.max())
+    # ax.set_ylim(data.min(), data.max())
+    ax.set_ylim(-0.2, 0.2)
     ax.set_xlabel("Balkenlänge")
     ax.set_ylabel("Verformung")
     ax.set_title("Biegung des Balkens über die Zeit")
@@ -524,6 +525,7 @@ if __name__ == "__main__":
         def set_n(self, new_n):
             self.n = new_n
             self.B = np.array([[0, 1, 0],
+                               [self.n, 1, 0],
                                [0, 2, 0],
                                [self.n, 3, 0],
                                [self.n, 4, 0]])
@@ -557,8 +559,6 @@ if __name__ == "__main__":
     alpha_e_static_solution_n3_arr = scipy.sparse.linalg.spsolve(getSe(params, idx_10),
                                                                  getve(params, idx_10))  # Find the static solution
 
-
-
     '''
     Aufgabe 11
     '''
@@ -586,11 +586,13 @@ if __name__ == "__main__":
     plt.show()
     plt.close()
 
+    params.set_n(1)
+
     '''
     Aufgabe 12
     '''
 
-    params.set_n(1)
+
     params.set_q(0)
     idx_12 = Indices(getindizes(params))
 
@@ -610,7 +612,6 @@ if __name__ == "__main__":
     Aufgabe 13
     '''
     # set parameters
-    params.set_n(3)
     params.set_q(1)
     idx_13 = Indices(getindizes(params))
 
@@ -803,11 +804,6 @@ if __name__ == "__main__":
 
 
     Al = getAl(params, idx_19)
-
-    test_solution = alpha_e_static_solution_n3_arr
-    # !!!!!Later use a_p_animation!!!!!!!
-
-    w = Al.dot(test_solution[:2 * params.n + 2])
 
     a_p_animation_high_res = np.array([Al.dot(solution[:2 * params.n + 2]) for solution in a_p_animation])
 

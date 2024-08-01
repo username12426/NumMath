@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Aug  1 12:39:23 2024
+
 @author: fischbach, stefanski, breda, erhard
 """
+
 
 import numpy as np
 import scipy.sparse
@@ -278,6 +280,7 @@ def getplot(a_p_animation, parameters):
     fig, ax = plt.subplots()
     line, = ax.plot([], [], lw=2)
     ax.set_xlim(0, 1)
+    # ax.set_ylim(data.min(), data.max())
     ax.set_ylim(-0.2, 0.2)
     ax.set_xlabel("$x$ auf Balkenlänge $l$ in $m$")
     ax.set_ylabel("Verformung $w(x,t)$ in $m$")
@@ -299,10 +302,12 @@ def getplot(a_p_animation, parameters):
     ani = FuncAnimation(fig, update, frames=num_time_steps, init_func=init, blit=True)
 
     # Save the animation as a GIF
-    ani.save("balkenbiegung_ani.gif", writer=PillowWriter(fps=10))
+    animation_file_name = "balkenbiegung_ani.gif"
+    ani.save(animation_file_name, writer=PillowWriter(fps=10))
 
     # Optional: Show the animation
     plt.show()
+    print(f"Animation gespeichert als {animation_file_name}")
     plt.close()
 
 

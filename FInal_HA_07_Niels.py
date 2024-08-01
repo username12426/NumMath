@@ -318,12 +318,12 @@ def getA(parameters: object, indexes: object):
 
 # calculate the analytic solution for the given problem
 def analytical_w(parameters, x_k):
-    return (parameters.q(x) / (parameters.E(x) * parameters.I(x))) * (
+    return (parameters.q(x_k) / (parameters.E(x_k) * parameters.I(x_k))) * (
             (x_k ** 4) / 24 - (parameters.l * x_k ** 3) / 6 + ((parameters.l ** 2) * (x_k ** 2)) / 4)
 
 
 def analytical_w_prime(parameters, x_k):
-    return (parameters.q(x) / (parameters.E(x) * parameters.I(x))) * (
+    return (parameters.q(x_k) / (parameters.E(x_k) * parameters.I(x_k))) * (
             (x_k ** 3) / 6 - (parameters.l * x_k ** 2) / 2 + (parameters.l ** 2 * x_k) / 2)
 
 
@@ -492,16 +492,9 @@ if __name__ == "__main__":
     Aufgabe 15
     '''
     my = lambda x_: x_**2  # Längenspezifische Masse in kg/m
-    E = lambda x_: x_ * 2 + 1 # Elastizitätsmodul in N/m^2
-    I = lambda x_: x_ * 2 + 1  # Flächenträgheitsmoment in m^4
-    q = lambda x_: x_**2 # Streckenlast in N/m
-
-    '''
-    B = np.array([[0, 1, 0],  # Auslenkung linkes Ende in m
-                  [0, 2, 0],  # Anstieg linkes Ende in 1
-                  [n, 3, 0],  # Moment rechtes Ende in Nm
-                  [n, 4, 0]])  # Querkraft rechtes Ende in N
-                      '''
+    E = lambda x_: x_ * 2 + 1  # Elastizitätsmodul in N/m^2
+    I = lambda x_: x_ * 2 + 1   # Flächenträgheitsmoment in m^4
+    q = lambda x_: x_**2  # Streckenlast in N/m
 
 
     class Parameters:
@@ -519,20 +512,17 @@ if __name__ == "__main__":
             self.E = E
             self.I = I
             self.q = q
+            self.q_constant = 0
             self.h = l / n
             self.B = None
 
         def set_n(self, new_n):
             self.n = new_n
             self.B = np.array([[0, 1, 0],
-                               [self.n, 1, 0],
                                [0, 2, 0],
                                [self.n, 3, 0],
                                [self.n, 4, 0]])
             self.h = self.l / self.n
-
-        def set_q(self, new_q):
-            self.q = lambda x: new_q
 
 
     class Indices:
@@ -554,26 +544,26 @@ if __name__ == "__main__":
     '''
 
     params.set_n(1)
-    n_plot_1 = params.n
+    n_beam = params.n
     idx_10 = Indices(getindizes(params))
     alpha_e_static_solution_n3_arr = scipy.sparse.linalg.spsolve(getSe(params, idx_10),
                                                                  getve(params, idx_10))  # Find the static solution
-
     '''
     Aufgabe 11
     '''
 
     # Build the maticies for the DGL n = 100
     params.set_n(100)
+
     idx_11 = Indices(getindizes(params))  # update index matrices
     alpha_e_static_solution_n100 = scipy.sparse.linalg.spsolve(getSe(params, idx_11), getve(params, idx_11))
 
     # Plot both solutions
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 4), sharey='row')
-    ax[0].plot(np.linspace(0, params.l, n_plot_1 + 1), alpha_e_static_solution_n3_arr[:2 * n_plot_1 + 2:2])
+    ax[0].plot(np.linspace(0, params.l, n_beam + 1), alpha_e_static_solution_n3_arr[:2 * n_beam + 2:2])
     ax[0].set_xlabel("x in m")
     ax[0].set_ylabel("w in m")
-    ax[0].set_title(f"Solution for n = {n_plot_1}")
+    ax[0].set_title(f"Solution for n = {n_beam}")
     ax[0].set_xlim(0, 1)
     ax[0].set_ylim(-0.15, 0.15)
 
@@ -586,14 +576,13 @@ if __name__ == "__main__":
     plt.show()
     plt.close()
 
-    params.set_n(1)
+    params.set_n(n_beam)
 
     '''
     Aufgabe 12
     '''
 
-
-    params.set_q(0)
+    params.q = lambda x_: 0  # Set Loads to zero
     idx_12 = Indices(getindizes(params))
 
     M_e = getMe(params, idx_12)
@@ -612,7 +601,7 @@ if __name__ == "__main__":
     Aufgabe 13
     '''
     # set parameters
-    params.set_q(1)
+    params.q = q    # set q back to a non constant function
     idx_13 = Indices(getindizes(params))
 
     error_rates_plot = []
@@ -621,7 +610,6 @@ if __name__ == "__main__":
     for n_iteration in range(1, 1001, 1):
         # set parameters
         params.set_n(n_iteration)
-        params.set_q(1)
         idx_13 = Indices(getindizes(params))
 
         x = np.linspace(0, params.l, n_iteration + 1)  # set supporting points
@@ -661,11 +649,12 @@ if __name__ == "__main__":
     plt.close()
     # plt.show()
 
+    params.set_n(n_beam)
+
     '''
     Aufgabe 14
     '''
     # calculate values
-    params.set_n(1)
     t = np.linspace(0, 100, params.n_p)
     # a)
     total_energy_a = newmark_simmulation(params, alpha_e_static_solution_n3_arr)
@@ -714,48 +703,20 @@ if __name__ == "__main__":
 
     # Zeige das Ergebnis an
     plt.tight_layout()
-    # plt.show()
+    plt.show()
     plt.close()
 
     '''
     Aufgabe 16
     '''
-    # test für ns = 3
-    params.set_n(1)
-    params.ns = 3
-    stencil = getstencil(params)
-    #  print("stencil", stencil)
 
     '''
     Aufgabe 17, 18
     '''
-    params.set_n(1)
-    params.ns = 7
-    idx_18 = Indices(getindizes(params))
-    quadrature_points = np.linspace(0, params.l, params.ns + 1)
-    a = getphi(params, idx_18, quadrature_points)
-    # print("a", a)
-    b = getddphi(params, idx_18)
-    # print("b", b)
-    h = geth(params)
-    # print("h", h)
-    T_inv = getTinv(params)
-    # print("T_inv", T_inv)
-    e3, e2 = getexp(params)
-    # print("e3", e3, "e2", e2)
 
     '''
     Aufgabe 19
     '''
-
-    idx_19 = Indices(getindizes(params))
-
-    M_bar19 = getMbar(params, idx_19)
-    print(f'Mbar Shape: {M_bar19.shape}')
-    S_bar19 = getSbar(params, idx_19)
-    q_bar19 = getqbar(params, idx_19)
-
-
 
 
     '''
@@ -803,7 +764,9 @@ if __name__ == "__main__":
         return A
 
 
-    Al = getAl(params, idx_19)
+    idx_20 = Indices(getindizes(params))
+
+    Al = getAl(params, idx_20)
 
     a_p_animation_high_res = np.array([Al.dot(solution[:2 * params.n + 2]) for solution in a_p_animation])
 
